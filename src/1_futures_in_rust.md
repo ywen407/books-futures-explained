@@ -54,7 +54,7 @@ completion alone as you'll understand by reading the next paragraph.
 
 ### Non-leaf-futures
 
-Non-leaf-futures is the kind of futures we as _users_ of a runtime writes
+Non-leaf-futures is the kind of futures we as _users_ of a runtime write
 ourselves using the `async` keyword to create a **task** which can be run on the
 executor.
 
