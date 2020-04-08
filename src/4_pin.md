@@ -614,9 +614,8 @@ we're soon finished.
 
 ## Bonus section: Fixing our self-referential generator and learning more about Pin
 
-But now, let's prevent this problem using `Pin`. We'll discuss
-`Pin` more in the next chapter, but you'll get an introduction here by just
-reading the comments.
+But now, let's prevent this problem using `Pin`. I've commented along the way to
+make it easier to spot and understand the changes we need to make.
 
 ```rust
 #![feature(optin_builtin_traits, negative_impls)] // needed to implement `!Unpin`

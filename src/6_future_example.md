@@ -1,4 +1,4 @@
-# Futures in Rust
+# Implementing Futures - main example
 
 We'll create our own `Futures` together with a fake reactor and a simple
 executor which allows you to edit, run an play around with the code right here
