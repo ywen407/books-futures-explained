@@ -6,7 +6,7 @@
 >- See first hand why we need `Pin`
 >- Understand what makes Rusts async model very memory efficient
 >
->The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
+>The motivation for `Generator`s can be found in [RFC#2033][rfc2033]. It's very
 >well written and I can recommend reading through it (it talks as much about
 >async/await as it does about generators).
 
@@ -38,7 +38,7 @@ coroutines which Rust uses today.
 
 ### Combinators
 
-`Futures 0.1` used combinators. If you've worked with `Promises` in JavaScript,
+`Futures 0.1` used combinators. If you've worked with `Promise`s in JavaScript,
 you already know combinators. In Rust they look like this:
 
 ```rust,noplaypen,ignore
@@ -93,7 +93,7 @@ async fn myfn() {
 
 Async in Rust is implemented using Generators. So to understand how async really
 works we need to understand generators first. Generators in Rust are implemented
-as state machines. 
+as state machines.
 
 The memory footprint of a chain of computations is defined by _the largest footprint
 that a single step requires_.
@@ -206,7 +206,7 @@ impl Generator for GeneratorA {
 Now that you know that the `yield` keyword in reality rewrites your code to become a state machine,
 you'll also know the basics of how `await` works. It's very similar.
 
-Now, there are some limitations in our naive state machine above. What happens when you have a 
+Now, there are some limitations in our naive state machine above. What happens when you have a
 `borrow` across a `yield` point?
 
 We could forbid that, but **one of the major design goals for the async/await syntax has been
@@ -247,10 +247,10 @@ Now what does our rewritten state machine look like with this example?
 
 ```rust,compile_fail
 # enum GeneratorState<Y, R> {
-#     Yielded(Y), 
+#     Yielded(Y),
 #     Complete(R),
 # }
-# 
+#
 # trait Generator {
 #     type Yield;
 #     type Return;
@@ -314,8 +314,8 @@ As you'll notice, this compiles just fine!
 
 ```rust
 enum GeneratorState<Y, R> {
-    Yielded(Y),  
-    Complete(R), 
+    Yielded(Y),
+    Complete(R),
 }
 
 trait Generator {
@@ -348,12 +348,12 @@ impl Generator for GeneratorA {
                 let borrowed = &to_borrow;
                 let res = borrowed.len();
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-                
+
                 // NB! And we set the pointer to reference the to_borrow string here
                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
                     *borrowed = to_borrow;
                 }
-               
+
                 GeneratorState::Yielded(res)
             }
 
@@ -401,16 +401,16 @@ pub fn main() {
     };
 }
 # enum GeneratorState<Y, R> {
-#     Yielded(Y),  
-#     Complete(R), 
+#     Yielded(Y),
+#     Complete(R),
 # }
-# 
+#
 # trait Generator {
 #     type Yield;
 #     type Return;
 #     fn resume(&mut self) -> GeneratorState<Self::Yield, Self::Return>;
 # }
-# 
+#
 # enum GeneratorA {
 #     Enter,
 #     Yield1 {
@@ -419,7 +419,7 @@ pub fn main() {
 #     },
 #     Exit,
 # }
-# 
+#
 # impl GeneratorA {
 #     fn start() -> Self {
 #         GeneratorA::Enter
@@ -435,15 +435,15 @@ pub fn main() {
 #                 let borrowed = &to_borrow;
 #                 let res = borrowed.len();
 #                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-#                 
+#
 #                 // We set the self-reference here
 #                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
 #                     *borrowed = to_borrow;
 #                 }
-#                
+#
 #                 GeneratorState::Yielded(res)
 #             }
-# 
+#
 #             GeneratorA::Yield1 {borrowed, ..} => {
 #                 let borrowed: &String = unsafe {&**borrowed};
 #                 println!("{} world", borrowed);
@@ -482,16 +482,16 @@ pub fn main() {
     };
 }
 # enum GeneratorState<Y, R> {
-#     Yielded(Y),  
-#     Complete(R), 
+#     Yielded(Y),
+#     Complete(R),
 # }
-# 
+#
 # trait Generator {
 #     type Yield;
 #     type Return;
 #     fn resume(&mut self) -> GeneratorState<Self::Yield, Self::Return>;
 # }
-# 
+#
 # enum GeneratorA {
 #     Enter,
 #     Yield1 {
@@ -500,7 +500,7 @@ pub fn main() {
 #     },
 #     Exit,
 # }
-# 
+#
 # impl GeneratorA {
 #     fn start() -> Self {
 #         GeneratorA::Enter
@@ -516,15 +516,15 @@ pub fn main() {
 #                 let borrowed = &to_borrow;
 #                 let res = borrowed.len();
 #                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-#                 
+#
 #                 // We set the self-reference here
 #                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
 #                     *borrowed = to_borrow;
 #                 }
-#                
+#
 #                 GeneratorState::Yielded(res)
 #             }
-# 
+#
 #             GeneratorA::Yield1 {borrowed, ..} => {
 #                 let borrowed: &String = unsafe {&**borrowed};
 #                 println!("{} world", borrowed);
@@ -625,7 +625,7 @@ pub fn main() {
         yield borrowed.len();
         println!("{} world!", borrowed);
     };
-    
+
     let gen2 = static || {
         let to_borrow = String::from("Hello");
         let borrowed = &to_borrow;
@@ -639,7 +639,7 @@ pub fn main() {
     if let GeneratorState::Yielded(n) = pinned1.as_mut().resume(()) {
         println!("Gen1 got value {}", n);
     }
-    
+
     if let GeneratorState::Yielded(n) = pinned2.as_mut().resume(()) {
         println!("Gen2 got value {}", n);
     };

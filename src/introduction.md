@@ -1,6 +1,6 @@
 # Futures Explained in 200 Lines of Rust
 
-This book aims to explain `Futures` in Rust using an example driven approach,
+This book aims to explain `Future`s in Rust using an example driven approach,
 exploring why they're designed the way they are, and how they work. We'll also
 take a look at some of the alternatives we have when dealing with concurrency
 in programming.
@@ -31,7 +31,7 @@ I've limited myself to a 200 line main example (hence the title) to limit the
 scope and introduce an example that can easily be explored further.
 
 However, there is a lot to digest and it's not what I would call easy, but we'll
-take everything step by step so get a cup of tea and relax. 
+take everything step by step so get a cup of tea and relax.
 
 I hope you enjoy the ride.
 
@@ -57,7 +57,7 @@ in Rust. If you like it, you might want to check out the others as well:
 ## Credits and thanks
 
 I'd like to take this chance to thank the people behind `mio`, `tokio`,
-`async_std`, `Futures`, `libc`, `crossbeam` which underpins so much of the
+`async_std`, `Future`s, `libc`, `crossbeam` which underpins so much of the
 async ecosystem and and rarely gets enough praise in my eyes.
 
 A special thanks to [jonhoo](https://twitter.com/jonhoo) who was kind enough to

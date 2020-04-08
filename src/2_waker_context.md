@@ -32,12 +32,12 @@ task-local storage and provide space for debugging hooks in later iterations.
 
 ## Understanding the `Waker`
 
-One of the most confusing things we encounter when implementing our own `Futures`
+One of the most confusing things we encounter when implementing our own `Future`s
 is how we implement a `Waker` . Creating a `Waker` involves creating a `vtable`
 which allows us to use dynamic dispatch to call methods on a _type erased_ trait
 object we construct our selves.
 
->If you want to know more about dynamic dispatch in Rust I can recommend  an 
+>If you want to know more about dynamic dispatch in Rust I can recommend an
 article written by Adam Schwalm called [Exploring Dynamic Dispatch in Rust](https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/).
 
 Let's explain this a bit more in detail.
@@ -46,7 +46,7 @@ Let's explain this a bit more in detail.
 
 To get a better understanding of how we implement the `Waker` in Rust, we need
 to take a step back and talk about some fundamentals. Let's start by taking a
-look at the size of some different pointer types in Rust. 
+look at the size of some different pointer types in Rust.
 
 Run the following code _(You'll have to press "play" to see the output)_:
 
