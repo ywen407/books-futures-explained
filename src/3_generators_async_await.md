@@ -228,7 +228,7 @@ let mut generator = move || {
 ```
 
 We'll be hand-coding some versions of a state-machines representing a state
-machine for the generator defined aboce.
+machine for the generator defined above.
 
 We step through each step "manually" in every example, so it looks pretty
 unfamiliar. We could add some syntactic sugar like implementing the `Iterator`
@@ -561,7 +561,7 @@ by looking at how generators and the async keyword is related.
 Futures in Rust are implemented as state machines much the same way Generators
 are state machines.
 
-You might have noticed the similarites in the syntax used in async blocks and
+You might have noticed the similarities in the syntax used in async blocks and
 the syntax used in generators:
 
 ```rust, ignore
@@ -596,7 +596,7 @@ point in a future is like a `yield` point in a generator.
 
 Do you see how they're connected now?
 
-Thats why kowing how generators work and the challanges they pose also teaches
+Thats why knowing how generators work and the challenges they pose also teaches
 you how futures work and the challenges we need to tackle when working with them.
 
 The same goes for the challenges of borrowing across yield/await points.
