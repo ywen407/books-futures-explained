@@ -69,10 +69,9 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
     // We poll in a loop, but it's not a busy loop. It will only run when
     // an event occurs, or a thread has a "spurious wakeup" (an unexpected wakeup
     // that can happen for no good reason).
-    let val = loop {
-
-        match Future::poll(pinned, &mut cx) {
-
+    let val = loop { 
+        match Future::poll(future, &mut cx) {
+        
             // when the Future is ready we're finished
             Poll::Ready(val) => break val,
 
