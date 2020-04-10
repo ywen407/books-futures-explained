@@ -155,16 +155,9 @@
                         <h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
 <p>Here is the whole example. You can edit it right here in your browser and
 run it yourself. Have fun!</p>
-<pre><pre class="playpen"><code class="language-rust editable edition2018">use std::{
-    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
-    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
-    thread::{self, JoinHandle}, time::{Duration, Instant}
-};
-
-fn main() {
+<pre><pre class="playpen"><code class="language-rust editable edition2018">fn main() {
     let start = Instant::now();
     let reactor = Reactor::new();
-    let reactor = Arc::new(Mutex::new(reactor));
     let future1 = Task::new(reactor.clone(), 1, 1);
     let future2 = Task::new(reactor.clone(), 2, 2);
 
@@ -188,10 +181,17 @@ fn main() {
     block_on(mainfut);
     reactor.lock().map(|mut r| r.close()).unwrap();
 }
+use std::{
+    future::Future, pin::Pin, sync::{ mpsc::{channel, Sender}, Arc, Mutex,},
+    task::{Context, Poll, RawWaker, RawWakerVTable, Waker}, mem,
+    thread::{self, JoinHandle}, time::{Duration, Instant}, collections::HashMap
+};
 
 // ============================= EXECUTOR ====================================
 fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
-    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    let mywaker = Arc::new(MyWaker {
+        thread: thread::current(),
+    });
     let waker = waker_into_waker(Arc::into_raw(mywaker));
     let mut cx = Context::from_waker(&amp;waker);
 
@@ -215,14 +215,13 @@ struct MyWaker {
 #[derive(Clone)]
 pub struct Task {
     id: usize,
-    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+    reactor: Arc&lt;Mutex&lt;Box&lt;Reactor&gt;&gt;&gt;,
     data: u64,
-    is_registered: bool,
 }
 
 fn mywaker_wake(s: &amp;MyWaker) {
     let waker_ptr: *const MyWaker = s;
-    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
+    let waker_arc = unsafe { Arc::from_raw(waker_ptr) };
     waker_arc.thread.unpark();
 }
 
@@ -234,10 +233,10 @@ fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
 
 const VTABLE: RawWakerVTable = unsafe {
     RawWakerVTable::new(
-        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
-        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
-        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
-        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
+        |s| mywaker_clone(&amp;*(s as *const MyWaker)),   // clone
+        |s| mywaker_wake(&amp;*(s as *const MyWaker)),    // wake
+        |s| mywaker_wake(*(s as *const &amp;MyWaker)),    // wake by ref
+        |s| drop(Arc::from_raw(s as *const MyWaker)), // decrease refcount
     )
 };
 
@@ -247,97 +246,107 @@ fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
 }
 
 impl Task {
-    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
-        Task {
-            id,
-            reactor,
-            data,
-            is_registered: false,
-        }
+    fn new(reactor: Arc&lt;Mutex&lt;Box&lt;Reactor&gt;&gt;&gt;, data: u64, id: usize) -&gt; Self {
+        Task { id, reactor, data }
     }
 }
 
 impl Future for Task {
     type Output = usize;
-    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+    fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
         let mut r = self.reactor.lock().unwrap();
         if r.is_ready(self.id) {
+            println!(&quot;POLL: TASK {} IS READY&quot;, self.id);
+            *r.tasks.get_mut(&amp;self.id).unwrap() = TaskState::Finished;
             Poll::Ready(self.id)
-        } else if self.is_registered {
+        } else if r.tasks.contains_key(&amp;self.id) {
+            println!(&quot;POLL: REPLACED WAKER FOR TASK: {}&quot;, self.id);
+            r.tasks.insert(self.id, TaskState::NotReady(cx.waker().clone()));
             Poll::Pending
         } else {
+            println!(&quot;POLL: REGISTERED TASK: {}, WAKER: {:?}&quot;, self.id, cx.waker());
             r.register(self.data, cx.waker().clone(), self.id);
-            drop(r);
-            self.is_registered = true;
             Poll::Pending
         }
     }
 }
 
 // =============================== REACTOR ===================================
+enum TaskState {
+    Ready,
+    NotReady(Waker),
+    Finished,
+}
 struct Reactor {
     dispatcher: Sender&lt;Event&gt;,
     handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
-    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+    tasks: HashMap&lt;usize, TaskState&gt;,
 }
+
 #[derive(Debug)]
 enum Event {
     Close,
-    Timeout(Waker, u64, usize),
+    Timeout(u64, usize),
 }
 
 impl Reactor {
-    fn new() -&gt; Self {
+    fn new() -&gt; Arc&lt;Mutex&lt;Box&lt;Self&gt;&gt;&gt; {
         let (tx, rx) = channel::&lt;Event&gt;();
-        let readylist = Arc::new(Mutex::new(vec![]));
-        let rl_clone = readylist.clone();
-        let mut handles = vec![];
+        let reactor = Arc::new(Mutex::new(Box::new(Reactor {
+            dispatcher: tx,
+            handle: None,
+            tasks: HashMap::new(),
+        })));
+        
+        let reactor_clone = Arc::downgrade(&amp;reactor);
         let handle = thread::spawn(move || {
-            // This simulates some I/O resource
+            let mut handles = vec![];
             for event in rx {
-                println!(&quot;REACTOR: {:?}&quot;, event);
-                let rl_clone = rl_clone.clone();
+                let reactor = reactor_clone.clone();
                 match event {
                     Event::Close =&gt; break,
-                    Event::Timeout(waker, duration, id) =&gt; {
+                    Event::Timeout(duration, id) =&gt; {
                         let event_handle = thread::spawn(move || {
                             thread::sleep(Duration::from_secs(duration));
-                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
-                            waker.wake();
+                            let reactor = reactor.upgrade().unwrap();
+                            reactor.lock().map(|mut r| r.wake(id)).unwrap();
                         });
-
                         handles.push(event_handle);
                     }
                 }
             }
-
-            for handle in handles {
-                handle.join().unwrap();
-            }
+            handles.into_iter().for_each(|handle| handle.join().unwrap());
         });
-
-        Reactor {
-            readylist,
-            dispatcher: tx,
-            handle: Some(handle),
-        }
+        reactor.lock().map(|mut r| r.handle = Some(handle)).unwrap();
+        reactor
     }
 
-    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
-        self.dispatcher
-            .send(Event::Timeout(waker, duration, data))
-            .unwrap();
+    fn wake(&amp;mut self, id: usize) {
+        self.tasks.get_mut(&amp;id).map(|state| {
+            match mem::replace(state, TaskState::Ready) {
+                TaskState::NotReady(waker) =&gt; waker.wake(),
+                TaskState::Finished =&gt; panic!(&quot;Called 'wake' twice on task: {}&quot;, id),
+                _ =&gt; unreachable!()
+            }
+        }).unwrap();
+    }
+
+    fn register(&amp;mut self, duration: u64, waker: Waker, id: usize) {
+        if self.tasks.insert(id, TaskState::NotReady(waker)).is_some() {
+            panic!(&quot;Tried to insert a task with id: '{}', twice!&quot;, id);
+        }
+        self.dispatcher.send(Event::Timeout(duration, id)).unwrap();
     }
 
     fn close(&amp;mut self) {
         self.dispatcher.send(Event::Close).unwrap();
     }
 
-    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
-        self.readylist
-            .lock()
-            .map(|rl| rl.iter().any(|id| *id == id_to_check))
-            .unwrap()
+    fn is_ready(&amp;self, id: usize) -&gt; bool {
+        self.tasks.get(&amp;id).map(|state| match state {
+            TaskState::Ready =&gt; true,
+            _ =&gt; false,
+        }).unwrap_or(false)
     }
 }
 

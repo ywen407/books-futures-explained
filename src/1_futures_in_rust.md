@@ -91,7 +91,7 @@ Rust is different from these languages in the sense that Rust doesn't come with
 a runtime for handling concurrency, so you need to use a library which provide
 this for you.
 
-Quite a bit of complexity attributed to `Futures` is actually complexity rooted
+Quite a bit of complexity attributed to Futures is actually complexity rooted
 in runtimes. Creating an efficient runtime is hard.
 
 Learning how to use one correctly requires quite a bit of effort as well, but
@@ -114,7 +114,7 @@ on the `Future`.
 You can think of the former as the reactor's job, and the latter as the
 executors job. These two parts of a runtime interact with each other using the `Waker` type.
 
-The two most popular runtimes for `Futures` as of writing this is:
+The two most popular runtimes for Futures as of writing this is:
 
 - [async-std](https://github.com/async-rs/async-std)
 - [Tokio](https://github.com/tokio-rs/tokio)
@@ -138,17 +138,17 @@ take a look at this async block using pseudo-rust as example:
 ```rust, ignore
 let non_leaf = async {
     let mut stream = TcpStream::connect("127.0.0.1:3000").await.unwrap(); // <-- yield
-    
+
     // request a large dataset
     let result = stream.write(get_dataset_request).await.unwrap(); // <-- yield
-    
+
     // wait for the dataset
     let mut response = vec![];
     stream.read(&mut response).await.unwrap(); // <-- yield
 
     // do some CPU-intensive analysis on the dataset
     let report = analyzer::analyze_data(response).unwrap();
-    
+
     // send the results back
     stream.write(report).await.unwrap(); // <-- yield
 };
@@ -189,16 +189,16 @@ can either perform CPU-intensive tasks or "blocking" tasks which is not supporte
 by the runtime.
 
 Now, armed with this knowledge you are already on a good way for understanding
-Futures, but we're not gonna stop yet, there is lots of details to cover. 
+Futures, but we're not gonna stop yet, there is lots of details to cover.
 
 Take a break or a cup of coffe and get ready as we go for a deep dive in the next chapters.
 
 ## Bonus section
 
 If you find the concepts of concurrency and async programming confusing in
-general, I know where you're coming from and I have written some resources to 
-try to give a high level overview that will make it easier to learn Rusts 
-`Futures` afterwards:
+general, I know where you're coming from and I have written some resources to
+try to give a high level overview that will make it easier to learn Rusts
+Futures afterwards:
 
 * [Async Basics - The difference between concurrency and parallelism](https://cfsamson.github.io/book-exploring-async-basics/1_concurrent_vs_parallel.html)
 * [Async Basics - Async history](https://cfsamson.github.io/book-exploring-async-basics/2_async_history.html)
@@ -206,7 +206,7 @@ try to give a high level overview that will make it easier to learn Rusts
 * [Async Basics - Epoll, Kqueue and IOCP](https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html)
 
 Learning these concepts by studying futures is making it much harder than
-it needs to be, so go on and read these chapters if you feel a bit unsure. 
+it needs to be, so go on and read these chapters if you feel a bit unsure.
 
 I'll be right here when you're back.
 

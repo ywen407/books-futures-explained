@@ -160,7 +160,7 @@
 <li>See first hand why we need <code>Pin</code></li>
 <li>Understand what makes Rusts async model very memory efficient</li>
 </ul>
-<p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
+<p>The motivation for <code>Generator</code>s can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
 async/await as it does about generators).</p>
 </blockquote>
@@ -185,7 +185,7 @@ handle concurrency:</p>
 so we won't repeat that here. We'll concentrate on the variants of stackless
 coroutines which Rust uses today.</p>
 <h3><a class="header" href="#combinators" id="combinators">Combinators</a></h3>
-<p><code>Futures 0.1</code> used combinators. If you've worked with <code>Promises</code> in JavaScript,
+<p><code>Futures 0.1</code> used combinators. If you've worked with Promises in JavaScript,
 you already know combinators. In Rust they look like this:</p>
 <pre><code class="language-rust noplaypen ignore">let future = Connection::connect(conn_str).and_then(|conn| {
     conn.query(&quot;somerequest&quot;).map(|row|{
@@ -230,7 +230,7 @@ async/await as keywords (it can even be done using a macro).</li>
 </code></pre>
 <p>Async in Rust is implemented using Generators. So to understand how async really
 works we need to understand generators first. Generators in Rust are implemented
-as state machines. </p>
+as state machines.</p>
 <p>The memory footprint of a chain of computations is defined by <em>the largest footprint
 that a single step requires</em>.</p>
 <p>That means that adding steps to a chain of computations might not require any
@@ -333,7 +333,7 @@ impl Generator for GeneratorA {
 </blockquote>
 <p>Now that you know that the <code>yield</code> keyword in reality rewrites your code to become a state machine,
 you'll also know the basics of how <code>await</code> works. It's very similar.</p>
-<p>Now, there are some limitations in our naive state machine above. What happens when you have a 
+<p>Now, there are some limitations in our naive state machine above. What happens when you have a
 <code>borrow</code> across a <code>yield</code> point?</p>
 <p>We could forbid that, but <strong>one of the major design goals for the async/await syntax has been
 to allow this</strong>. These kinds of borrows were not possible using <code>Futures 0.1</code> so we can't let this
@@ -351,7 +351,7 @@ in depth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizin
     };
 </code></pre>
 <p>We'll be hand-coding some versions of a state-machines representing a state
-machine for the generator defined aboce.</p>
+machine for the generator defined above.</p>
 <p>We step through each step &quot;manually&quot; in every example, so it looks pretty
 unfamiliar. We could add some syntactic sugar like implementing the <code>Iterator</code>
 trait for our generators which would let us do this:</p>
@@ -366,7 +366,7 @@ Just keep this in the back of your head as we move forward.</p>
 <span class="boring">#![allow(unused_variables)]
 </span><span class="boring">fn main() {
 </span><span class="boring">enum GeneratorState&lt;Y, R&gt; {
-</span><span class="boring">    Yielded(Y), 
+</span><span class="boring">    Yielded(Y),
 </span><span class="boring">    Complete(R),
 </span><span class="boring">}
 </span><span class="boring">
@@ -430,8 +430,8 @@ into itself.</p>
 <span class="boring">#![allow(unused_variables)]
 </span><span class="boring">fn main() {
 </span>enum GeneratorState&lt;Y, R&gt; {
-    Yielded(Y),  
-    Complete(R), 
+    Yielded(Y),
+    Complete(R),
 }
 
 trait Generator {
@@ -464,12 +464,12 @@ impl Generator for GeneratorA {
                 let borrowed = &amp;to_borrow;
                 let res = borrowed.len();
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-                
+
                 // NB! And we set the pointer to reference the to_borrow string here
                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
                     *borrowed = to_borrow;
                 }
-               
+
                 GeneratorState::Yielded(res)
             }
 
@@ -512,8 +512,8 @@ does what we'd expect. But there is still one huge problem with this:</p>
     };
 }
 <span class="boring">enum GeneratorState&lt;Y, R&gt; {
-</span><span class="boring">    Yielded(Y),  
-</span><span class="boring">    Complete(R), 
+</span><span class="boring">    Yielded(Y),
+</span><span class="boring">    Complete(R),
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">trait Generator {
@@ -546,12 +546,12 @@ does what we'd expect. But there is still one huge problem with this:</p>
 </span><span class="boring">                let borrowed = &amp;to_borrow;
 </span><span class="boring">                let res = borrowed.len();
 </span><span class="boring">                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-</span><span class="boring">                
+</span><span class="boring">
 </span><span class="boring">                // We set the self-reference here
 </span><span class="boring">                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
 </span><span class="boring">                    *borrowed = to_borrow;
 </span><span class="boring">                }
-</span><span class="boring">               
+</span><span class="boring">
 </span><span class="boring">                GeneratorState::Yielded(res)
 </span><span class="boring">            }
 </span><span class="boring">
@@ -590,8 +590,8 @@ does what we'd expect. But there is still one huge problem with this:</p>
     };
 }
 <span class="boring">enum GeneratorState&lt;Y, R&gt; {
-</span><span class="boring">    Yielded(Y),  
-</span><span class="boring">    Complete(R), 
+</span><span class="boring">    Yielded(Y),
+</span><span class="boring">    Complete(R),
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">trait Generator {
@@ -624,12 +624,12 @@ does what we'd expect. But there is still one huge problem with this:</p>
 </span><span class="boring">                let borrowed = &amp;to_borrow;
 </span><span class="boring">                let res = borrowed.len();
 </span><span class="boring">                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-</span><span class="boring">                
+</span><span class="boring">
 </span><span class="boring">                // We set the self-reference here
 </span><span class="boring">                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
 </span><span class="boring">                    *borrowed = to_borrow;
 </span><span class="boring">                }
-</span><span class="boring">               
+</span><span class="boring">
 </span><span class="boring">                GeneratorState::Yielded(res)
 </span><span class="boring">            }
 </span><span class="boring">
@@ -651,7 +651,7 @@ while using just safe Rust. This is a big problem!</p>
 <blockquote>
 <p>I've actually forced the code above to use the nightly version of the compiler.
 If you run <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2018&amp;gist=5cbe9897c0e23a502afd2740c7e78b98">the example above on the playground</a>,
-you'll see that it runs without panicing on the current stable (1.42.0) but
+you'll see that it runs without panicking on the current stable (1.42.0) but
 panics on the current nightly (1.44.0). Scary!</p>
 </blockquote>
 <p>We'll explain exactly what happened here using a slightly simpler example in the next
@@ -663,7 +663,7 @@ by looking at how generators and the async keyword is related.</p>
 <h2><a class="header" href="#async-and-generators" id="async-and-generators">Async and generators</a></h2>
 <p>Futures in Rust are implemented as state machines much the same way Generators
 are state machines.</p>
-<p>You might have noticed the similarites in the syntax used in async blocks and
+<p>You might have noticed the similarities in the syntax used in async blocks and
 the syntax used in generators:</p>
 <pre><code class="language-rust ignore">let mut gen = move || {
         let to_borrow = String::from(&quot;Hello&quot;);
@@ -688,7 +688,7 @@ a Future works and the way a Generator work internally is similar.</p>
 returning <code>Yielded</code> or <code>Complete</code> it returns <code>Pending</code> or <code>Ready</code>. Each <code>await</code>
 point in a future is like a <code>yield</code> point in a generator.</p>
 <p>Do you see how they're connected now?</p>
-<p>Thats why kowing how generators work and the challanges they pose also teaches
+<p>Thats why knowing how generators work and the challenges they pose also teaches
 you how futures work and the challenges we need to tackle when working with them.</p>
 <p>The same goes for the challenges of borrowing across yield/await points.</p>
 <h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
@@ -712,7 +712,7 @@ pub fn main() {
         yield borrowed.len();
         println!(&quot;{} world!&quot;, borrowed);
     };
-    
+
     let gen2 = static || {
         let to_borrow = String::from(&quot;Hello&quot;);
         let borrowed = &amp;to_borrow;
@@ -726,7 +726,7 @@ pub fn main() {
     if let GeneratorState::Yielded(n) = pinned1.as_mut().resume(()) {
         println!(&quot;Gen1 got value {}&quot;, n);
     }
-    
+
     if let GeneratorState::Yielded(n) = pinned2.as_mut().resume(()) {
         println!(&quot;Gen2 got value {}&quot;, n);
     };

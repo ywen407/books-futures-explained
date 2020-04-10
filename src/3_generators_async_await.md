@@ -6,7 +6,7 @@
 >- See first hand why we need `Pin`
 >- Understand what makes Rusts async model very memory efficient
 >
->The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
+>The motivation for `Generator`s can be found in [RFC#2033][rfc2033]. It's very
 >well written and I can recommend reading through it (it talks as much about
 >async/await as it does about generators).
 
@@ -38,7 +38,7 @@ coroutines which Rust uses today.
 
 ### Combinators
 
-`Futures 0.1` used combinators. If you've worked with `Promises` in JavaScript,
+`Futures 0.1` used combinators. If you've worked with Promises in JavaScript,
 you already know combinators. In Rust they look like this:
 
 ```rust,noplaypen,ignore
@@ -93,7 +93,7 @@ async fn myfn() {
 
 Async in Rust is implemented using Generators. So to understand how async really
 works we need to understand generators first. Generators in Rust are implemented
-as state machines. 
+as state machines.
 
 The memory footprint of a chain of computations is defined by _the largest footprint
 that a single step requires_.
@@ -206,7 +206,7 @@ impl Generator for GeneratorA {
 Now that you know that the `yield` keyword in reality rewrites your code to become a state machine,
 you'll also know the basics of how `await` works. It's very similar.
 
-Now, there are some limitations in our naive state machine above. What happens when you have a 
+Now, there are some limitations in our naive state machine above. What happens when you have a
 `borrow` across a `yield` point?
 
 We could forbid that, but **one of the major design goals for the async/await syntax has been
@@ -247,10 +247,10 @@ Now what does our rewritten state machine look like with this example?
 
 ```rust,compile_fail
 # enum GeneratorState<Y, R> {
-#     Yielded(Y), 
+#     Yielded(Y),
 #     Complete(R),
 # }
-# 
+#
 # trait Generator {
 #     type Yield;
 #     type Return;
@@ -314,8 +314,8 @@ As you'll notice, this compiles just fine!
 
 ```rust
 enum GeneratorState<Y, R> {
-    Yielded(Y),  
-    Complete(R), 
+    Yielded(Y),
+    Complete(R),
 }
 
 trait Generator {
@@ -348,12 +348,12 @@ impl Generator for GeneratorA {
                 let borrowed = &to_borrow;
                 let res = borrowed.len();
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-                
+
                 // NB! And we set the pointer to reference the to_borrow string here
                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
                     *borrowed = to_borrow;
                 }
-               
+
                 GeneratorState::Yielded(res)
             }
 
@@ -401,16 +401,16 @@ pub fn main() {
     };
 }
 # enum GeneratorState<Y, R> {
-#     Yielded(Y),  
-#     Complete(R), 
+#     Yielded(Y),
+#     Complete(R),
 # }
-# 
+#
 # trait Generator {
 #     type Yield;
 #     type Return;
 #     fn resume(&mut self) -> GeneratorState<Self::Yield, Self::Return>;
 # }
-# 
+#
 # enum GeneratorA {
 #     Enter,
 #     Yield1 {
@@ -419,7 +419,7 @@ pub fn main() {
 #     },
 #     Exit,
 # }
-# 
+#
 # impl GeneratorA {
 #     fn start() -> Self {
 #         GeneratorA::Enter
@@ -435,15 +435,15 @@ pub fn main() {
 #                 let borrowed = &to_borrow;
 #                 let res = borrowed.len();
 #                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-#                 
+#
 #                 // We set the self-reference here
 #                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
 #                     *borrowed = to_borrow;
 #                 }
-#                
+#
 #                 GeneratorState::Yielded(res)
 #             }
-# 
+#
 #             GeneratorA::Yield1 {borrowed, ..} => {
 #                 let borrowed: &String = unsafe {&**borrowed};
 #                 println!("{} world", borrowed);
@@ -459,6 +459,7 @@ pub fn main() {
 The problem is that in safe Rust we can still do this:
 
 _Run the code and compare the results. Do you see the problem?_
+
 ```rust, should_panic
 # #![feature(never_type)] // Force nightly compiler to be used in playground
 # // by betting on it's true that this type is named after it's stabilization date...
@@ -482,16 +483,16 @@ pub fn main() {
     };
 }
 # enum GeneratorState<Y, R> {
-#     Yielded(Y),  
-#     Complete(R), 
+#     Yielded(Y),
+#     Complete(R),
 # }
-# 
+#
 # trait Generator {
 #     type Yield;
 #     type Return;
 #     fn resume(&mut self) -> GeneratorState<Self::Yield, Self::Return>;
 # }
-# 
+#
 # enum GeneratorA {
 #     Enter,
 #     Yield1 {
@@ -500,7 +501,7 @@ pub fn main() {
 #     },
 #     Exit,
 # }
-# 
+#
 # impl GeneratorA {
 #     fn start() -> Self {
 #         GeneratorA::Enter
@@ -516,15 +517,15 @@ pub fn main() {
 #                 let borrowed = &to_borrow;
 #                 let res = borrowed.len();
 #                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-#                 
+#
 #                 // We set the self-reference here
 #                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
 #                     *borrowed = to_borrow;
 #                 }
-#                
+#
 #                 GeneratorState::Yielded(res)
 #             }
-# 
+#
 #             GeneratorA::Yield1 {borrowed, ..} => {
 #                 let borrowed: &String = unsafe {&**borrowed};
 #                 println!("{} world", borrowed);
@@ -545,7 +546,7 @@ while using just safe Rust. This is a big problem!
 
 > I've actually forced the code above to use the nightly version of the compiler.
 > If you run [the example above on the playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=5cbe9897c0e23a502afd2740c7e78b98),
-> you'll see that it runs without panicing on the current stable (1.42.0) but
+> you'll see that it runs without panicking on the current stable (1.42.0) but
 > panics on the current nightly (1.44.0). Scary!
 
 We'll explain exactly what happened here using a slightly simpler example in the next
@@ -625,7 +626,7 @@ pub fn main() {
         yield borrowed.len();
         println!("{} world!", borrowed);
     };
-    
+
     let gen2 = static || {
         let to_borrow = String::from("Hello");
         let borrowed = &to_borrow;
@@ -639,7 +640,7 @@ pub fn main() {
     if let GeneratorState::Yielded(n) = pinned1.as_mut().resume(()) {
         println!("Gen1 got value {}", n);
     }
-    
+
     if let GeneratorState::Yielded(n) = pinned2.as_mut().resume(()) {
         println!("Gen2 got value {}", n);
     };

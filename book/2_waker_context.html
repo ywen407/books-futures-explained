@@ -180,19 +180,19 @@ recommend <a href="https://boats.gitlab.io/blog/post/wakers-i/">Withoutboats art
 flexibility for future evolutions of the API in Rust. The context can for example hold
 task-local storage and provide space for debugging hooks in later iterations.</p>
 <h2><a class="header" href="#understanding-the-waker" id="understanding-the-waker">Understanding the <code>Waker</code></a></h2>
-<p>One of the most confusing things we encounter when implementing our own <code>Futures</code>
+<p>One of the most confusing things we encounter when implementing our own <code>Future</code>s
 is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code>
 which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait
 object we construct our selves.</p>
 <blockquote>
-<p>If you want to know more about dynamic dispatch in Rust I can recommend  an 
+<p>If you want to know more about dynamic dispatch in Rust I can recommend an
 article written by Adam Schwalm called <a href="https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/">Exploring Dynamic Dispatch in Rust</a>.</p>
 </blockquote>
 <p>Let's explain this a bit more in detail.</p>
 <h2><a class="header" href="#fat-pointers-in-rust" id="fat-pointers-in-rust">Fat pointers in Rust</a></h2>
 <p>To get a better understanding of how we implement the <code>Waker</code> in Rust, we need
 to take a step back and talk about some fundamentals. Let's start by taking a
-look at the size of some different pointer types in Rust. </p>
+look at the size of some different pointer types in Rust.</p>
 <p>Run the following code <em>(You'll have to press &quot;play&quot; to see the output)</em>:</p>
 <pre><pre class="playpen"><code class="language-rust"><span class="boring">use std::mem::size_of;
 </span>trait SomeTrait { }
