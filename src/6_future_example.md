@@ -24,7 +24,7 @@ Let's start off by getting all our imports right away so you can follow along
 ```rust, noplaypen, ignore
 use std::{
     future::Future, pin::Pin, sync::{ mpsc::{channel, Sender}, Arc, Mutex,},
-    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
+    task::{Context, Poll, RawWaker, RawWakerVTable, Waker}, mem,
     thread::{self, JoinHandle}, time::{Duration, Instant}, collections::HashMap
 };
 ```
