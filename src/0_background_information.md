@@ -72,12 +72,12 @@ First, for computers to be [_efficient_](https://en.wikipedia.org/wiki/Efficienc
 start to look under the covers (like [how an operating system works](https://os.phil-opp.com/async-await/))
 you'll see concurrency everywhere. It's very fundamental in everything we do.
 
-Second, we have the web. 
+Secondly, we have the web.
 
 Web servers are all about I/O and handling small tasks
 (requests). When the number of small tasks is large it's not a good fit for OS
 threads as of today because of the memory they require and the overhead involved
-when creating new threads. 
+when creating new threads.
 
 This gets even more problematic when the load is variable which means the current number of tasks a
 program has at any point in time is unpredictable. That's why you'll see so many async web
@@ -102,7 +102,7 @@ such a system) which then continues running a different task.
 
 Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no
-need for `async`, `await`, `Futures` or `Pin`. 
+need for `async`, `await`, `Future` or `Pin`.
 
 **The typical flow looks like this:**
 
@@ -145,27 +145,28 @@ A green threads example could look something like this:
 > It's not in any way meant to showcase "best practice". Just so we're on
 > the same page.
 
-_**Press the expand icon in the top right corner to show the example code.**_ 
+_**Press the expand icon in the top right corner to show the example code.**_
+
 ```rust, edition2018
 # #![feature(asm, naked_functions)]
 # use std::ptr;
-# 
+#
 # const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
 # const MAX_THREADS: usize = 4;
 # static mut RUNTIME: usize = 0;
-# 
+#
 # pub struct Runtime {
 #     threads: Vec<Thread>,
 #     current: usize,
 # }
-# 
+#
 # #[derive(PartialEq, Eq, Debug)]
 # enum State {
 #     Available,
 #     Running,
 #     Ready,
 # }
-# 
+#
 # struct Thread {
 #     id: usize,
 #     stack: Vec<u8>,
@@ -173,7 +174,7 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #     state: State,
 #     task: Option<Box<dyn Fn()>>,
 # }
-# 
+#
 # #[derive(Debug, Default)]
 # #[repr(C)]
 # struct ThreadContext {
@@ -186,7 +187,7 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #     rbp: u64,
 #     thread_ptr: u64,
 # }
-# 
+#
 # impl Thread {
 #     fn new(id: usize) -> Self {
 #         Thread {
@@ -198,7 +199,7 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #         }
 #     }
 # }
-# 
+#
 # impl Runtime {
 #     pub fn new() -> Self {
 #         let base_thread = Thread {
@@ -208,37 +209,37 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #             state: State::Running,
 #             task: None,
 #         };
-# 
+#
 #         let mut threads = vec![base_thread];
 #         threads[0].ctx.thread_ptr = &threads[0] as *const Thread as u64;
 #         let mut available_threads: Vec<Thread> = (1..MAX_THREADS).map(|i| Thread::new(i)).collect();
 #         threads.append(&mut available_threads);
-# 
+#
 #         Runtime {
 #             threads,
 #             current: 0,
 #         }
 #     }
-# 
+#
 #     pub fn init(&self) {
 #         unsafe {
 #             let r_ptr: *const Runtime = self;
 #             RUNTIME = r_ptr as usize;
 #         }
 #     }
-# 
+#
 #     pub fn run(&mut self) -> ! {
 #         while self.t_yield() {}
 #         std::process::exit(0);
 #     }
-# 
+#
 #     fn t_return(&mut self) {
 #         if self.current != 0 {
 #             self.threads[self.current].state = State::Available;
 #             self.t_yield();
 #         }
 #     }
-# 
+#
 #     fn t_yield(&mut self) -> bool {
 #         let mut pos = self.current;
 #         while self.threads[pos].state != State::Ready {
@@ -250,21 +251,21 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #                 return false;
 #             }
 #         }
-#         
+#
 #         if self.threads[self.current].state != State::Available {
 #             self.threads[self.current].state = State::Ready;
 #         }
-# 
+#
 #         self.threads[pos].state = State::Running;
 #         let old_pos = self.current;
 #         self.current = pos;
-# 
+#
 #         unsafe {
 #             switch(&mut self.threads[old_pos].ctx, &self.threads[pos].ctx);
 #         }
 #         true
 #     }
-# 
+#
 #     pub fn spawn<F: Fn() + 'static>(f: F){
 #         unsafe {
 #             let rt_ptr = RUNTIME as *mut Runtime;
@@ -273,7 +274,7 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #                 .iter_mut()
 #                 .find(|t| t.state == State::Available)
 #                 .expect("no available thread.");
-#                 
+#
 #             let size = available.stack.len();
 #             let s_ptr = available.stack.as_mut_ptr();
 #             available.task = Some(Box::new(f));
@@ -285,14 +286,14 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #         }
 #     }
 # }
-# 
+#
 # fn call(thread: u64) {
 #     let thread = unsafe { &*(thread as *const Thread) };
 #     if let Some(f) = &thread.task {
 #         f();
 #     }
 # }
-# 
+#
 # #[naked]
 # fn guard() {
 #     unsafe {
@@ -302,14 +303,14 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #         rt.t_return();
 #     };
 # }
-# 
+#
 # pub fn yield_thread() {
 #     unsafe {
 #         let rt_ptr = RUNTIME as *mut Runtime;
 #         (*rt_ptr).t_yield();
 #     };
 # }
-# 
+#
 # #[naked]
 # #[inline(never)]
 # unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
@@ -321,7 +322,7 @@ _**Press the expand icon in the top right corner to show the example code.**_
 #         mov     %r12, 0x20($0)
 #         mov     %rbx, 0x28($0)
 #         mov     %rbp, 0x30($0)
-# 
+#
 #         mov     0x00($1), %rsp
 #         mov     0x08($1), %r15
 #         mov     0x10($1), %r14
@@ -366,7 +367,7 @@ the same. You can always go back and read the book which explains it later.
 ## Callback based approaches
 
 You probably already know what we're going to talk about in the next paragraphs
-from JavaScript which I assume most know. 
+from JavaScript which I assume most know.
 
 >If your exposure to JavaScript callbacks has given you any sorts of PTSD earlier
 in life, close your eyes now and scroll down for 2-3 seconds. You'll find a link
@@ -482,8 +483,8 @@ as timers but could represent any kind of resource that we'll have to wait for.
 
 You might start to wonder by now, when are we going to talk about Futures?
 
-Well, we're getting there. You see `promises`, `futures` and other names for
-deferred computations are often used interchangeably. 
+Well, we're getting there. You see Promises, Futures and other names for
+deferred computations are often used interchangeably.
 
 There are formal differences between them, but we won't cover those
 here. It's worth explaining `promises` a bit since they're widely known due to
@@ -521,8 +522,8 @@ timer(200)
 ```
 
 The change is even more substantial under the hood. You see, promises return
-a state machine which can be in one of three states: `pending`, `fulfilled` or 
-`rejected`. 
+a state machine which can be in one of three states: `pending`, `fulfilled` or
+`rejected`.
 
 When we call `timer(200)` in the sample above, we get back a promise in the state `pending`.
 
@@ -558,6 +559,6 @@ get into the right mindset for exploring Rust's Futures.
 > need to be polled once before they do any work.
 
 <br />
-<div style="text-align: center;  padding-top: 2em;"> 
+<div style="text-align: center;  padding-top: 2em;">
 <a href="/books-futures-explained/1_futures_in_rust.html" style="background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
 </div>

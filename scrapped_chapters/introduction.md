@@ -60,6 +60,3 @@ Before we go on further, let's separate the topic of async programming into some
 #### How \`Futures\` are implemented in the language
 
 If you've followed the discussions about Rusts `Futures` and `async/await` you realize that there has gone a ton of work into implementing these concepts in the Runtime.
-
-
-
