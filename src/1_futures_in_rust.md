@@ -54,7 +54,7 @@ completion alone as you'll understand by reading the next paragraph.
 
 ### Non-leaf-futures
 
-Non-leaf-futures is the kind of futures we as _users_ of a runtime writes
+Non-leaf-futures is the kind of futures we as _users_ of a runtime write
 ourselves using the `async` keyword to create a **task** which can be run on the
 executor.
 
@@ -112,7 +112,7 @@ notifying a `Future` that it can do more work, and actually doing the work
 on the `Future`.
 
 You can think of the former as the reactor's job, and the latter as the
-executors job. These two parts of a runtime interacts using the `Waker` type.
+executors job. These two parts of a runtime interact with each other using the `Waker` type.
 
 The two most popular runtimes for `Futures` as of writing this is:
 
