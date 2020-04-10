@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="sidebar-visible no-js">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -34,11 +34,11 @@
 
         
     </head>
-    <body>
+    <body class="light">
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+            var default_theme = "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -62,11 +62,8 @@
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            var html = document.querySelector('html');
-            html.classList.remove('no-js')
-            html.classList.remove('light')
-            html.classList.add(theme);
-            html.classList.add('js');
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
@@ -82,8 +79,8 @@
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded affix "><a href="introduction.html">Introduction</a></li><li class="expanded "><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li class="expanded "><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li class="expanded "><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li class="expanded "><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li class="expanded "><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li class="expanded "><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li class="expanded "><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="expanded affix "><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -334,199 +331,199 @@ It's not in any way meant to showcase &quot;best practice&quot;. Just so we're o
 the same page.</p>
 </blockquote>
 <p><em><strong>Press the expand icon in the top right corner to show the example code.</strong></em> </p>
-<pre><pre class="playpen"><code class="language-rust edition2018"><span class="boring">#![feature(asm, naked_functions)]
-</span><span class="boring">use std::ptr;
-</span><span class="boring">
-</span><span class="boring">const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
-</span><span class="boring">const MAX_THREADS: usize = 4;
-</span><span class="boring">static mut RUNTIME: usize = 0;
-</span><span class="boring">
-</span><span class="boring">pub struct Runtime {
-</span><span class="boring">    threads: Vec&lt;Thread&gt;,
-</span><span class="boring">    current: usize,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[derive(PartialEq, Eq, Debug)]
-</span><span class="boring">enum State {
-</span><span class="boring">    Available,
-</span><span class="boring">    Running,
-</span><span class="boring">    Ready,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">struct Thread {
-</span><span class="boring">    id: usize,
-</span><span class="boring">    stack: Vec&lt;u8&gt;,
-</span><span class="boring">    ctx: ThreadContext,
-</span><span class="boring">    state: State,
-</span><span class="boring">    task: Option&lt;Box&lt;dyn Fn()&gt;&gt;,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[derive(Debug, Default)]
-</span><span class="boring">#[repr(C)]
-</span><span class="boring">struct ThreadContext {
-</span><span class="boring">    rsp: u64,
-</span><span class="boring">    r15: u64,
-</span><span class="boring">    r14: u64,
-</span><span class="boring">    r13: u64,
-</span><span class="boring">    r12: u64,
-</span><span class="boring">    rbx: u64,
-</span><span class="boring">    rbp: u64,
-</span><span class="boring">    thread_ptr: u64,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Thread {
-</span><span class="boring">    fn new(id: usize) -&gt; Self {
-</span><span class="boring">        Thread {
-</span><span class="boring">            id,
-</span><span class="boring">            stack: vec![0_u8; DEFAULT_STACK_SIZE],
-</span><span class="boring">            ctx: ThreadContext::default(),
-</span><span class="boring">            state: State::Available,
-</span><span class="boring">            task: None,
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Runtime {
-</span><span class="boring">    pub fn new() -&gt; Self {
-</span><span class="boring">        let base_thread = Thread {
-</span><span class="boring">            id: 0,
-</span><span class="boring">            stack: vec![0_u8; DEFAULT_STACK_SIZE],
-</span><span class="boring">            ctx: ThreadContext::default(),
-</span><span class="boring">            state: State::Running,
-</span><span class="boring">            task: None,
-</span><span class="boring">        };
-</span><span class="boring">
-</span><span class="boring">        let mut threads = vec![base_thread];
-</span><span class="boring">        threads[0].ctx.thread_ptr = &amp;threads[0] as *const Thread as u64;
-</span><span class="boring">        let mut available_threads: Vec&lt;Thread&gt; = (1..MAX_THREADS).map(|i| Thread::new(i)).collect();
-</span><span class="boring">        threads.append(&amp;mut available_threads);
-</span><span class="boring">
-</span><span class="boring">        Runtime {
-</span><span class="boring">            threads,
-</span><span class="boring">            current: 0,
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    pub fn init(&amp;self) {
-</span><span class="boring">        unsafe {
-</span><span class="boring">            let r_ptr: *const Runtime = self;
-</span><span class="boring">            RUNTIME = r_ptr as usize;
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    pub fn run(&amp;mut self) -&gt; ! {
-</span><span class="boring">        while self.t_yield() {}
-</span><span class="boring">        std::process::exit(0);
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn t_return(&amp;mut self) {
-</span><span class="boring">        if self.current != 0 {
-</span><span class="boring">            self.threads[self.current].state = State::Available;
-</span><span class="boring">            self.t_yield();
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn t_yield(&amp;mut self) -&gt; bool {
-</span><span class="boring">        let mut pos = self.current;
-</span><span class="boring">        while self.threads[pos].state != State::Ready {
-</span><span class="boring">            pos += 1;
-</span><span class="boring">            if pos == self.threads.len() {
-</span><span class="boring">                pos = 0;
-</span><span class="boring">            }
-</span><span class="boring">            if pos == self.current {
-</span><span class="boring">                return false;
-</span><span class="boring">            }
-</span><span class="boring">        }
-</span><span class="boring">        
-</span><span class="boring">        if self.threads[self.current].state != State::Available {
-</span><span class="boring">            self.threads[self.current].state = State::Ready;
-</span><span class="boring">        }
-</span><span class="boring">
-</span><span class="boring">        self.threads[pos].state = State::Running;
-</span><span class="boring">        let old_pos = self.current;
-</span><span class="boring">        self.current = pos;
-</span><span class="boring">
-</span><span class="boring">        unsafe {
-</span><span class="boring">            switch(&amp;mut self.threads[old_pos].ctx, &amp;self.threads[pos].ctx);
-</span><span class="boring">        }
-</span><span class="boring">        true
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    pub fn spawn&lt;F: Fn() + 'static&gt;(f: F){
-</span><span class="boring">        unsafe {
-</span><span class="boring">            let rt_ptr = RUNTIME as *mut Runtime;
-</span><span class="boring">            let available = (*rt_ptr)
-</span><span class="boring">                .threads
-</span><span class="boring">                .iter_mut()
-</span><span class="boring">                .find(|t| t.state == State::Available)
-</span><span class="boring">                .expect(&quot;no available thread.&quot;);
-</span><span class="boring">                
-</span><span class="boring">            let size = available.stack.len();
-</span><span class="boring">            let s_ptr = available.stack.as_mut_ptr();
-</span><span class="boring">            available.task = Some(Box::new(f));
-</span><span class="boring">            available.ctx.thread_ptr = available as *const Thread as u64;
-</span><span class="boring">            ptr::write(s_ptr.offset((size - 8) as isize) as *mut u64, guard as u64);
-</span><span class="boring">            ptr::write(s_ptr.offset((size - 16) as isize) as *mut u64, call as u64);
-</span><span class="boring">            available.ctx.rsp = s_ptr.offset((size - 16) as isize) as u64;
-</span><span class="boring">            available.state = State::Ready;
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">fn call(thread: u64) {
-</span><span class="boring">    let thread = unsafe { &amp;*(thread as *const Thread) };
-</span><span class="boring">    if let Some(f) = &amp;thread.task {
-</span><span class="boring">        f();
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[naked]
-</span><span class="boring">fn guard() {
-</span><span class="boring">    unsafe {
-</span><span class="boring">        let rt_ptr = RUNTIME as *mut Runtime;
-</span><span class="boring">        let rt = &amp;mut *rt_ptr;
-</span><span class="boring">        println!(&quot;THREAD {} FINISHED.&quot;, rt.threads[rt.current].id);
-</span><span class="boring">        rt.t_return();
-</span><span class="boring">    };
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">pub fn yield_thread() {
-</span><span class="boring">    unsafe {
-</span><span class="boring">        let rt_ptr = RUNTIME as *mut Runtime;
-</span><span class="boring">        (*rt_ptr).t_yield();
-</span><span class="boring">    };
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[naked]
-</span><span class="boring">#[inline(never)]
-</span><span class="boring">unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
-</span><span class="boring">    asm!(&quot;
-</span><span class="boring">        mov     %rsp, 0x00($0)
-</span><span class="boring">        mov     %r15, 0x08($0)
-</span><span class="boring">        mov     %r14, 0x10($0)
-</span><span class="boring">        mov     %r13, 0x18($0)
-</span><span class="boring">        mov     %r12, 0x20($0)
-</span><span class="boring">        mov     %rbx, 0x28($0)
-</span><span class="boring">        mov     %rbp, 0x30($0)
-</span><span class="boring">
-</span><span class="boring">        mov     0x00($1), %rsp
-</span><span class="boring">        mov     0x08($1), %r15
-</span><span class="boring">        mov     0x10($1), %r14
-</span><span class="boring">        mov     0x18($1), %r13
-</span><span class="boring">        mov     0x20($1), %r12
-</span><span class="boring">        mov     0x28($1), %rbx
-</span><span class="boring">        mov     0x30($1), %rbp
-</span><span class="boring">        mov     0x38($1), %rdi
-</span><span class="boring">        ret
-</span><span class="boring">        &quot;
-</span><span class="boring">    :
-</span><span class="boring">    : &quot;r&quot;(old), &quot;r&quot;(new)
-</span><span class="boring">    :
-</span><span class="boring">    : &quot;alignstack&quot;
-</span><span class="boring">    );
-</span><span class="boring">}
-</span><span class="boring">#[cfg(not(windows))]
-</span>fn main() {
+<pre><pre class="playpen"><code class="language-rust edition2018"># #![feature(asm, naked_functions)]
+# use std::ptr;
+# 
+# const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
+# const MAX_THREADS: usize = 4;
+# static mut RUNTIME: usize = 0;
+# 
+# pub struct Runtime {
+#     threads: Vec&lt;Thread&gt;,
+#     current: usize,
+# }
+# 
+# #[derive(PartialEq, Eq, Debug)]
+# enum State {
+#     Available,
+#     Running,
+#     Ready,
+# }
+# 
+# struct Thread {
+#     id: usize,
+#     stack: Vec&lt;u8&gt;,
+#     ctx: ThreadContext,
+#     state: State,
+#     task: Option&lt;Box&lt;dyn Fn()&gt;&gt;,
+# }
+# 
+# #[derive(Debug, Default)]
+# #[repr(C)]
+# struct ThreadContext {
+#     rsp: u64,
+#     r15: u64,
+#     r14: u64,
+#     r13: u64,
+#     r12: u64,
+#     rbx: u64,
+#     rbp: u64,
+#     thread_ptr: u64,
+# }
+# 
+# impl Thread {
+#     fn new(id: usize) -&gt; Self {
+#         Thread {
+#             id,
+#             stack: vec![0_u8; DEFAULT_STACK_SIZE],
+#             ctx: ThreadContext::default(),
+#             state: State::Available,
+#             task: None,
+#         }
+#     }
+# }
+# 
+# impl Runtime {
+#     pub fn new() -&gt; Self {
+#         let base_thread = Thread {
+#             id: 0,
+#             stack: vec![0_u8; DEFAULT_STACK_SIZE],
+#             ctx: ThreadContext::default(),
+#             state: State::Running,
+#             task: None,
+#         };
+# 
+#         let mut threads = vec![base_thread];
+#         threads[0].ctx.thread_ptr = &amp;threads[0] as *const Thread as u64;
+#         let mut available_threads: Vec&lt;Thread&gt; = (1..MAX_THREADS).map(|i| Thread::new(i)).collect();
+#         threads.append(&amp;mut available_threads);
+# 
+#         Runtime {
+#             threads,
+#             current: 0,
+#         }
+#     }
+# 
+#     pub fn init(&amp;self) {
+#         unsafe {
+#             let r_ptr: *const Runtime = self;
+#             RUNTIME = r_ptr as usize;
+#         }
+#     }
+# 
+#     pub fn run(&amp;mut self) -&gt; ! {
+#         while self.t_yield() {}
+#         std::process::exit(0);
+#     }
+# 
+#     fn t_return(&amp;mut self) {
+#         if self.current != 0 {
+#             self.threads[self.current].state = State::Available;
+#             self.t_yield();
+#         }
+#     }
+# 
+#     fn t_yield(&amp;mut self) -&gt; bool {
+#         let mut pos = self.current;
+#         while self.threads[pos].state != State::Ready {
+#             pos += 1;
+#             if pos == self.threads.len() {
+#                 pos = 0;
+#             }
+#             if pos == self.current {
+#                 return false;
+#             }
+#         }
+#         
+#         if self.threads[self.current].state != State::Available {
+#             self.threads[self.current].state = State::Ready;
+#         }
+# 
+#         self.threads[pos].state = State::Running;
+#         let old_pos = self.current;
+#         self.current = pos;
+# 
+#         unsafe {
+#             switch(&amp;mut self.threads[old_pos].ctx, &amp;self.threads[pos].ctx);
+#         }
+#         true
+#     }
+# 
+#     pub fn spawn&lt;F: Fn() + 'static&gt;(f: F){
+#         unsafe {
+#             let rt_ptr = RUNTIME as *mut Runtime;
+#             let available = (*rt_ptr)
+#                 .threads
+#                 .iter_mut()
+#                 .find(|t| t.state == State::Available)
+#                 .expect(&quot;no available thread.&quot;);
+#                 
+#             let size = available.stack.len();
+#             let s_ptr = available.stack.as_mut_ptr();
+#             available.task = Some(Box::new(f));
+#             available.ctx.thread_ptr = available as *const Thread as u64;
+#             ptr::write(s_ptr.offset((size - 8) as isize) as *mut u64, guard as u64);
+#             ptr::write(s_ptr.offset((size - 16) as isize) as *mut u64, call as u64);
+#             available.ctx.rsp = s_ptr.offset((size - 16) as isize) as u64;
+#             available.state = State::Ready;
+#         }
+#     }
+# }
+# 
+# fn call(thread: u64) {
+#     let thread = unsafe { &amp;*(thread as *const Thread) };
+#     if let Some(f) = &amp;thread.task {
+#         f();
+#     }
+# }
+# 
+# #[naked]
+# fn guard() {
+#     unsafe {
+#         let rt_ptr = RUNTIME as *mut Runtime;
+#         let rt = &amp;mut *rt_ptr;
+#         println!(&quot;THREAD {} FINISHED.&quot;, rt.threads[rt.current].id);
+#         rt.t_return();
+#     };
+# }
+# 
+# pub fn yield_thread() {
+#     unsafe {
+#         let rt_ptr = RUNTIME as *mut Runtime;
+#         (*rt_ptr).t_yield();
+#     };
+# }
+# 
+# #[naked]
+# #[inline(never)]
+# unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
+#     asm!(&quot;
+#         mov     %rsp, 0x00($0)
+#         mov     %r15, 0x08($0)
+#         mov     %r14, 0x10($0)
+#         mov     %r13, 0x18($0)
+#         mov     %r12, 0x20($0)
+#         mov     %rbx, 0x28($0)
+#         mov     %rbp, 0x30($0)
+# 
+#         mov     0x00($1), %rsp
+#         mov     0x08($1), %r15
+#         mov     0x10($1), %r14
+#         mov     0x18($1), %r13
+#         mov     0x20($1), %r12
+#         mov     0x28($1), %rbx
+#         mov     0x30($1), %rbp
+#         mov     0x38($1), %rdi
+#         ret
+#         &quot;
+#     :
+#     : &quot;r&quot;(old), &quot;r&quot;(new)
+#     :
+#     : &quot;alignstack&quot;
+#     );
+# }
+# #[cfg(not(windows))]
+fn main() {
     let mut runtime = Runtime::new();
     runtime.init();
     Runtime::spawn(|| {
@@ -542,9 +539,9 @@ the same page.</p>
     });
     runtime.run();
 }
-<span class="boring">#[cfg(windows)]
-</span><span class="boring">fn main() { }
-</span></code></pre></pre>
+# #[cfg(windows)]
+# fn main() { }
+</code></pre></pre>
 <p>Still hanging in there? Good. Don't get frustrated if the code above is
 difficult to understand. If I hadn't written it myself I would probably feel
 the same. You can always go back and read the book which explains it later.</p>
@@ -762,7 +759,7 @@ a runtime, but we'll go through how they're constructed in this book as well.</p
 <p>It's also unlikely that you'll pass a leaf-future to a runtime and run it to
 completion alone as you'll understand by reading the next paragraph.</p>
 <h3><a class="header" href="#non-leaf-futures" id="non-leaf-futures">Non-leaf-futures</a></h3>
-<p>Non-leaf-futures is the kind of futures we as <em>users</em> of a runtime writes
+<p>Non-leaf-futures is the kind of futures we as <em>users</em> of a runtime write
 ourselves using the <code>async</code> keyword to create a <strong>task</strong> which can be run on the
 executor.</p>
 <p>The bulk of an async program will consist of non-leaf-futures, which are a kind
@@ -807,7 +804,7 @@ you'll just use the one provided for you.</p>
 notifying a <code>Future</code> that it can do more work, and actually doing the work
 on the <code>Future</code>.</p>
 <p>You can think of the former as the reactor's job, and the latter as the
-executors job. These two parts of a runtime interacts using the <code>Waker</code> type.</p>
+executors job. These two parts of a runtime interact with each other using the <code>Waker</code> type.</p>
 <p>The two most popular runtimes for <code>Futures</code> as of writing this is:</p>
 <ul>
 <li><a href="https://github.com/async-rs/async-std">async-std</a></li>
@@ -935,8 +932,8 @@ article written by Adam Schwalm called <a href="https://alschwalm.com/blog/stati
 to take a step back and talk about some fundamentals. Let's start by taking a
 look at the size of some different pointer types in Rust. </p>
 <p>Run the following code <em>(You'll have to press &quot;play&quot; to see the output)</em>:</p>
-<pre><pre class="playpen"><code class="language-rust"><span class="boring">use std::mem::size_of;
-</span>trait SomeTrait { }
+<pre><pre class="playpen"><code class="language-rust"># use std::mem::size_of;
+trait SomeTrait { }
 
 fn main() {
     println!(&quot;======== The size of different pointers in Rust: ========&quot;);
@@ -1245,7 +1242,7 @@ in depth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizin
     };
 </code></pre>
 <p>We'll be hand-coding some versions of a state-machines representing a state
-machine for the generator defined aboce.</p>
+machine for the generator defined above.</p>
 <p>We step through each step &quot;manually&quot; in every example, so it looks pretty
 unfamiliar. We could add some syntactic sugar like implementing the <code>Iterator</code>
 trait for our generators which would let us do this:</p>
@@ -1257,19 +1254,19 @@ trait for our generators which would let us do this:</p>
 Just keep this in the back of your head as we move forward.</p>
 <p>Now what does our rewritten state machine look like with this example?</p>
 <pre><pre class="playpen"><code class="language-rust compile_fail">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span><span class="boring">enum GeneratorState&lt;Y, R&gt; {
-</span><span class="boring">    Yielded(Y), 
-</span><span class="boring">    Complete(R),
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">trait Generator {
-</span><span class="boring">    type Yield;
-</span><span class="boring">    type Return;
-</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
-</span><span class="boring">}
-</span>
+# #![allow(unused_variables)]
+#fn main() {
+# enum GeneratorState&lt;Y, R&gt; {
+#     Yielded(Y), 
+#     Complete(R),
+# }
+# 
+# trait Generator {
+#     type Yield;
+#     type Return;
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+# }
+
 enum GeneratorA {
     Enter,
     Yield1 {
@@ -1279,12 +1276,12 @@ enum GeneratorA {
     Exit,
 }
 
-<span class="boring">impl GeneratorA {
-</span><span class="boring">    fn start() -&gt; Self {
-</span><span class="boring">        GeneratorA::Enter
-</span><span class="boring">    }
-</span><span class="boring">}
-</span>
+# impl GeneratorA {
+#     fn start() -&gt; Self {
+#         GeneratorA::Enter
+#     }
+# }
+
 impl Generator for GeneratorA {
     type Yield = usize;
     type Return = ();
@@ -1309,8 +1306,7 @@ impl Generator for GeneratorA {
         }
     }
 }
-<span class="boring">}
-</span></code></pre></pre>
+#}</code></pre></pre>
 <p>If you try to compile this you'll get an error (just try it yourself by pressing play).</p>
 <p>What is the lifetime of <code>&amp;String</code>. It's not the same as the lifetime of <code>Self</code>. It's not <code>static</code>.
 Turns out that it's not possible for us in Rusts syntax to describe this lifetime, which means, that
@@ -1321,9 +1317,9 @@ see we end up in a <em>self referential struct</em>. A struct which holds refere
 into itself.</p>
 <p>As you'll notice, this compiles just fine!</p>
 <pre><pre class="playpen"><code class="language-rust">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span>enum GeneratorState&lt;Y, R&gt; {
+# #![allow(unused_variables)]
+#fn main() {
+enum GeneratorState&lt;Y, R&gt; {
     Yielded(Y),  
     Complete(R), 
 }
@@ -1377,8 +1373,7 @@ impl Generator for GeneratorA {
         }
     }
 }
-<span class="boring">}
-</span></code></pre></pre>
+#}</code></pre></pre>
 <p>Remember that our example is the generator we crated which looked like this:</p>
 <pre><code class="language-rust noplaypen ignore">let mut gen = move || {
         let to_borrow = String::from(&quot;Hello&quot;);
@@ -1405,66 +1400,66 @@ does what we'd expect. But there is still one huge problem with this:</p>
         ()
     };
 }
-<span class="boring">enum GeneratorState&lt;Y, R&gt; {
-</span><span class="boring">    Yielded(Y),  
-</span><span class="boring">    Complete(R), 
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">trait Generator {
-</span><span class="boring">    type Yield;
-</span><span class="boring">    type Return;
-</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">enum GeneratorA {
-</span><span class="boring">    Enter,
-</span><span class="boring">    Yield1 {
-</span><span class="boring">        to_borrow: String,
-</span><span class="boring">        borrowed: *const String,
-</span><span class="boring">    },
-</span><span class="boring">    Exit,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl GeneratorA {
-</span><span class="boring">    fn start() -&gt; Self {
-</span><span class="boring">        GeneratorA::Enter
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">impl Generator for GeneratorA {
-</span><span class="boring">    type Yield = usize;
-</span><span class="boring">    type Return = ();
-</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
-</span><span class="boring">            match self {
-</span><span class="boring">            GeneratorA::Enter =&gt; {
-</span><span class="boring">                let to_borrow = String::from(&quot;Hello&quot;);
-</span><span class="boring">                let borrowed = &amp;to_borrow;
-</span><span class="boring">                let res = borrowed.len();
-</span><span class="boring">                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-</span><span class="boring">                
-</span><span class="boring">                // We set the self-reference here
-</span><span class="boring">                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
-</span><span class="boring">                    *borrowed = to_borrow;
-</span><span class="boring">                }
-</span><span class="boring">               
-</span><span class="boring">                GeneratorState::Yielded(res)
-</span><span class="boring">            }
-</span><span class="boring">
-</span><span class="boring">            GeneratorA::Yield1 {borrowed, ..} =&gt; {
-</span><span class="boring">                let borrowed: &amp;String = unsafe {&amp;**borrowed};
-</span><span class="boring">                println!(&quot;{} world&quot;, borrowed);
-</span><span class="boring">                *self = GeneratorA::Exit;
-</span><span class="boring">                GeneratorState::Complete(())
-</span><span class="boring">            }
-</span><span class="boring">            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# enum GeneratorState&lt;Y, R&gt; {
+#     Yielded(Y),  
+#     Complete(R), 
+# }
+# 
+# trait Generator {
+#     type Yield;
+#     type Return;
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+# }
+# 
+# enum GeneratorA {
+#     Enter,
+#     Yield1 {
+#         to_borrow: String,
+#         borrowed: *const String,
+#     },
+#     Exit,
+# }
+# 
+# impl GeneratorA {
+#     fn start() -&gt; Self {
+#         GeneratorA::Enter
+#     }
+# }
+# impl Generator for GeneratorA {
+#     type Yield = usize;
+#     type Return = ();
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+#             match self {
+#             GeneratorA::Enter =&gt; {
+#                 let to_borrow = String::from(&quot;Hello&quot;);
+#                 let borrowed = &amp;to_borrow;
+#                 let res = borrowed.len();
+#                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+#                 
+#                 // We set the self-reference here
+#                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+#                     *borrowed = to_borrow;
+#                 }
+#                
+#                 GeneratorState::Yielded(res)
+#             }
+# 
+#             GeneratorA::Yield1 {borrowed, ..} =&gt; {
+#                 let borrowed: &amp;String = unsafe {&amp;**borrowed};
+#                 println!(&quot;{} world&quot;, borrowed);
+#                 *self = GeneratorA::Exit;
+#                 GeneratorState::Complete(())
+#             }
+#             GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+#         }
+#     }
+# }
+</code></pre></pre>
 <p>The problem is that in safe Rust we can still do this:</p>
 <p><em>Run the code and compare the results. Do you see the problem?</em></p>
-<pre><pre class="playpen"><code class="language-rust should_panic"><span class="boring">#![feature(never_type)] // Force nightly compiler to be used in playground
-</span><span class="boring">// by betting on it's true that this type is named after it's stabilization date...
-</span>pub fn main() {
+<pre><pre class="playpen"><code class="language-rust should_panic"># #![feature(never_type)] // Force nightly compiler to be used in playground
+# // by betting on it's true that this type is named after it's stabilization date...
+pub fn main() {
     let mut gen = GeneratorA::start();
     let mut gen2 = GeneratorA::start();
 
@@ -1483,61 +1478,61 @@ does what we'd expect. But there is still one huge problem with this:</p>
         ()
     };
 }
-<span class="boring">enum GeneratorState&lt;Y, R&gt; {
-</span><span class="boring">    Yielded(Y),  
-</span><span class="boring">    Complete(R), 
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">trait Generator {
-</span><span class="boring">    type Yield;
-</span><span class="boring">    type Return;
-</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">enum GeneratorA {
-</span><span class="boring">    Enter,
-</span><span class="boring">    Yield1 {
-</span><span class="boring">        to_borrow: String,
-</span><span class="boring">        borrowed: *const String,
-</span><span class="boring">    },
-</span><span class="boring">    Exit,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl GeneratorA {
-</span><span class="boring">    fn start() -&gt; Self {
-</span><span class="boring">        GeneratorA::Enter
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">impl Generator for GeneratorA {
-</span><span class="boring">    type Yield = usize;
-</span><span class="boring">    type Return = ();
-</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
-</span><span class="boring">            match self {
-</span><span class="boring">            GeneratorA::Enter =&gt; {
-</span><span class="boring">                let to_borrow = String::from(&quot;Hello&quot;);
-</span><span class="boring">                let borrowed = &amp;to_borrow;
-</span><span class="boring">                let res = borrowed.len();
-</span><span class="boring">                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-</span><span class="boring">                
-</span><span class="boring">                // We set the self-reference here
-</span><span class="boring">                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
-</span><span class="boring">                    *borrowed = to_borrow;
-</span><span class="boring">                }
-</span><span class="boring">               
-</span><span class="boring">                GeneratorState::Yielded(res)
-</span><span class="boring">            }
-</span><span class="boring">
-</span><span class="boring">            GeneratorA::Yield1 {borrowed, ..} =&gt; {
-</span><span class="boring">                let borrowed: &amp;String = unsafe {&amp;**borrowed};
-</span><span class="boring">                println!(&quot;{} world&quot;, borrowed);
-</span><span class="boring">                *self = GeneratorA::Exit;
-</span><span class="boring">                GeneratorState::Complete(())
-</span><span class="boring">            }
-</span><span class="boring">            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# enum GeneratorState&lt;Y, R&gt; {
+#     Yielded(Y),  
+#     Complete(R), 
+# }
+# 
+# trait Generator {
+#     type Yield;
+#     type Return;
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+# }
+# 
+# enum GeneratorA {
+#     Enter,
+#     Yield1 {
+#         to_borrow: String,
+#         borrowed: *const String,
+#     },
+#     Exit,
+# }
+# 
+# impl GeneratorA {
+#     fn start() -&gt; Self {
+#         GeneratorA::Enter
+#     }
+# }
+# impl Generator for GeneratorA {
+#     type Yield = usize;
+#     type Return = ();
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+#             match self {
+#             GeneratorA::Enter =&gt; {
+#                 let to_borrow = String::from(&quot;Hello&quot;);
+#                 let borrowed = &amp;to_borrow;
+#                 let res = borrowed.len();
+#                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+#                 
+#                 // We set the self-reference here
+#                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+#                     *borrowed = to_borrow;
+#                 }
+#                
+#                 GeneratorState::Yielded(res)
+#             }
+# 
+#             GeneratorA::Yield1 {borrowed, ..} =&gt; {
+#                 let borrowed: &amp;String = unsafe {&amp;**borrowed};
+#                 println!(&quot;{} world&quot;, borrowed);
+#                 *self = GeneratorA::Exit;
+#                 GeneratorState::Complete(())
+#             }
+#             GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+#         }
+#     }
+# }
+</code></pre></pre>
 <p>Wait? What happened to &quot;Hello&quot;? And why did our code segfault?</p>
 <p>Turns out that while the example above compiles just fine, we expose consumers
 of this this API to both possible undefined behavior and other memory errors
@@ -1557,7 +1552,7 @@ by looking at how generators and the async keyword is related.</p>
 <h2><a class="header" href="#async-and-generators" id="async-and-generators">Async and generators</a></h2>
 <p>Futures in Rust are implemented as state machines much the same way Generators
 are state machines.</p>
-<p>You might have noticed the similarites in the syntax used in async blocks and
+<p>You might have noticed the similarities in the syntax used in async blocks and
 the syntax used in generators:</p>
 <pre><code class="language-rust ignore">let mut gen = move || {
         let to_borrow = String::from(&quot;Hello&quot;);
@@ -1582,7 +1577,7 @@ a Future works and the way a Generator work internally is similar.</p>
 returning <code>Yielded</code> or <code>Complete</code> it returns <code>Pending</code> or <code>Ready</code>. Each <code>await</code>
 point in a future is like a <code>yield</code> point in a generator.</p>
 <p>Do you see how they're connected now?</p>
-<p>Thats why kowing how generators work and the challanges they pose also teaches
+<p>Thats why knowing how generators work and the challenges they pose also teaches
 you how futures work and the challenges we need to tackle when working with them.</p>
 <p>The same goes for the challenges of borrowing across yield/await points.</p>
 <h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
@@ -1720,37 +1715,37 @@ you see, this works as expected:</p>
     println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
 
 }
-<span class="boring">use std::pin::Pin;
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct Test {
-</span><span class="boring">    a: String,
-</span><span class="boring">    b: *const String,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Test {
-</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
-</span><span class="boring">        Test {
-</span><span class="boring">            a,
-</span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    // We need an `init` method to actually set our self-reference
-</span><span class="boring">    fn init(&amp;mut self) {
-</span><span class="boring">        let self_ref: *const String = &amp;self.a;
-</span><span class="boring">        self.b = self_ref;
-</span><span class="boring">    }
-</span><span class="boring">    
-</span><span class="boring">    fn a(&amp;self) -&gt; &amp;str {
-</span><span class="boring">        &amp;self.a
-</span><span class="boring">    } 
-</span><span class="boring">    
-</span><span class="boring">    fn b(&amp;self) -&gt; &amp;String {
-</span><span class="boring">        unsafe {&amp;*(self.b)}
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     // We need an `init` method to actually set our self-reference
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
 <p>In our main method we first instantiate two instances of <code>Test</code> and print out
 the value of the fields on <code>test1</code>. We get what we'd expect:</p>
 <pre><code class="language-rust ignore">a: test1, b: test1
@@ -1770,36 +1765,36 @@ which <code>test1</code> is pointing to with the data stored at the memory locat
     println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
 
 }
-<span class="boring">use std::pin::Pin;
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct Test {
-</span><span class="boring">    a: String,
-</span><span class="boring">    b: *const String,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Test {
-</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
-</span><span class="boring">        Test {
-</span><span class="boring">            a,
-</span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn init(&amp;mut self) {
-</span><span class="boring">        let self_ref: *const String = &amp;self.a;
-</span><span class="boring">        self.b = self_ref;
-</span><span class="boring">    }
-</span><span class="boring">    
-</span><span class="boring">    fn a(&amp;self) -&gt; &amp;str {
-</span><span class="boring">        &amp;self.a
-</span><span class="boring">    } 
-</span><span class="boring">    
-</span><span class="boring">    fn b(&amp;self) -&gt; &amp;String {
-</span><span class="boring">        unsafe {&amp;*(self.b)}
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
 <p>Naively, we could think that what we should get a debug print of <code>test1</code> two
 times like this</p>
 <pre><code class="language-rust ignore">a: test1, b: test1
@@ -1826,36 +1821,36 @@ be tied to the lifetime of <code>test2</code> anymore.</p>
     println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
 
 }
-<span class="boring">use std::pin::Pin;
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct Test {
-</span><span class="boring">    a: String,
-</span><span class="boring">    b: *const String,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Test {
-</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
-</span><span class="boring">        Test {
-</span><span class="boring">            a,
-</span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn init(&amp;mut self) {
-</span><span class="boring">        let self_ref: *const String = &amp;self.a;
-</span><span class="boring">        self.b = self_ref;
-</span><span class="boring">    }
-</span><span class="boring">    
-</span><span class="boring">    fn a(&amp;self) -&gt; &amp;str {
-</span><span class="boring">        &amp;self.a
-</span><span class="boring">    } 
-</span><span class="boring">    
-</span><span class="boring">    fn b(&amp;self) -&gt; &amp;String {
-</span><span class="boring">        unsafe {&amp;*(self.b)}
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
 <p>That shouldn't happen. There is no serious error yet, but as you can imagine
 it's easy to create serious bugs using this code.</p>
 <p>I created a diagram to help visualize what's going on:</p>
@@ -1922,42 +1917,42 @@ we'll show in a second.</p>
     println!(&quot;a: {}, b: {}&quot;, Test::a(test1.as_ref()), Test::b(test1.as_ref()));
     println!(&quot;a: {}, b: {}&quot;, Test::a(test2.as_ref()), Test::b(test2.as_ref()));
 }
-<span class="boring">use std::pin::Pin;
-</span><span class="boring">use std::marker::PhantomPinned;
-</span><span class="boring">
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct Test {
-</span><span class="boring">    a: String,
-</span><span class="boring">    b: *const String,
-</span><span class="boring">    _marker: PhantomPinned,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">
-</span><span class="boring">impl Test {
-</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
-</span><span class="boring">        Test {
-</span><span class="boring">            a,
-</span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">            // This makes our type `!Unpin`
-</span><span class="boring">            _marker: PhantomPinned,
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
-</span><span class="boring">        let self_ptr: *const String = &amp;self.a;
-</span><span class="boring">        let this = unsafe { self.get_unchecked_mut() };
-</span><span class="boring">        this.b = self_ptr;
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
-</span><span class="boring">        &amp;self.get_ref().a
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
-</span><span class="boring">        unsafe { &amp;*(self.b) }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# use std::pin::Pin;
+# use std::marker::PhantomPinned;
+# 
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+#     _marker: PhantomPinned,
+# }
+# 
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#             // This makes our type `!Unpin`
+#             _marker: PhantomPinned,
+#         }
+#     }
+#     fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
+#         let self_ptr: *const String = &amp;self.a;
+#         let this = unsafe { self.get_unchecked_mut() };
+#         this.b = self_ptr;
+#     }
+# 
+#     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+#         &amp;self.get_ref().a
+#     }
+# 
+#     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+#         unsafe { &amp;*(self.b) }
+#     }
+# }
+</code></pre></pre>
 <p>Now, if we try to pull the same trick which got us in to trouble the last time
 you'll get a compilation error.</p>
 <pre><pre class="playpen"><code class="language-rust compile_fail">pub fn main() {
@@ -1973,42 +1968,42 @@ you'll get a compilation error.</p>
     std::mem::swap(test1.as_mut(), test2.as_mut());
     println!(&quot;a: {}, b: {}&quot;, Test::a(test2.as_ref()), Test::b(test2.as_ref()));
 }
-<span class="boring">use std::pin::Pin;
-</span><span class="boring">use std::marker::PhantomPinned;
-</span><span class="boring">
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct Test {
-</span><span class="boring">    a: String,
-</span><span class="boring">    b: *const String,
-</span><span class="boring">    _marker: PhantomPinned,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">
-</span><span class="boring">impl Test {
-</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
-</span><span class="boring">        Test {
-</span><span class="boring">            a,
-</span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">            // This makes our type `!Unpin`
-</span><span class="boring">            _marker: PhantomPinned,
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
-</span><span class="boring">        let self_ptr: *const String = &amp;self.a;
-</span><span class="boring">        let this = unsafe { self.get_unchecked_mut() };
-</span><span class="boring">        this.b = self_ptr;
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
-</span><span class="boring">        &amp;self.get_ref().a
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
-</span><span class="boring">        unsafe { &amp;*(self.b) }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# use std::pin::Pin;
+# use std::marker::PhantomPinned;
+# 
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+#     _marker: PhantomPinned,
+# }
+# 
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#             // This makes our type `!Unpin`
+#             _marker: PhantomPinned,
+#         }
+#     }
+#     fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
+#         let self_ptr: *const String = &amp;self.a;
+#         let this = unsafe { self.get_unchecked_mut() };
+#         this.b = self_ptr;
+#     }
+# 
+#     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+#         &amp;self.get_ref().a
+#     }
+# 
+#     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+#         unsafe { &amp;*(self.b) }
+#     }
+# }
+</code></pre></pre>
 <p>As you see from the error you get by running the code the type system prevents
 us from swapping the pinned pointers.</p>
 <blockquote>
@@ -2029,43 +2024,43 @@ after it's initialized like this:</p>
    mem::swap(&amp;mut test1, &amp;mut test2);
    println!(&quot;Not self referential anymore: {:?}&quot;, test1.b);
 }
-<span class="boring">use std::pin::Pin;
-</span><span class="boring">use std::marker::PhantomPinned;
-</span><span class="boring">use std::mem;
-</span><span class="boring">
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct Test {
-</span><span class="boring">    a: String,
-</span><span class="boring">    b: *const String,
-</span><span class="boring">    _marker: PhantomPinned,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">
-</span><span class="boring">impl Test {
-</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
-</span><span class="boring">        Test {
-</span><span class="boring">            a,
-</span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">            // This makes our type `!Unpin`
-</span><span class="boring">            _marker: PhantomPinned,
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
-</span><span class="boring">        let self_ptr: *const String = &amp;self.a;
-</span><span class="boring">        let this = unsafe { self.get_unchecked_mut() };
-</span><span class="boring">        this.b = self_ptr;
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
-</span><span class="boring">        &amp;self.get_ref().a
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
-</span><span class="boring">        unsafe { &amp;*(self.b) }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# use std::pin::Pin;
+# use std::marker::PhantomPinned;
+# use std::mem;
+# 
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+#     _marker: PhantomPinned,
+# }
+# 
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#             // This makes our type `!Unpin`
+#             _marker: PhantomPinned,
+#         }
+#     }
+#     fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
+#         let self_ptr: *const String = &amp;self.a;
+#         let this = unsafe { self.get_unchecked_mut() };
+#         this.b = self_ptr;
+#     }
+# 
+#     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+#         &amp;self.get_ref().a
+#     }
+# 
+#     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+#         unsafe { &amp;*(self.b) }
+#     }
+# }
+</code></pre></pre>
 </blockquote>
 <h2><a class="header" href="#pinning-to-the-heap" id="pinning-to-the-heap">Pinning to the heap</a></h2>
 <p>For completeness let's remove some unsafe and the need for an <code>init</code> method
@@ -2326,9 +2321,9 @@ here will be in <code>main.rs</code></p>
 <h2><a class="header" href="#implementing-our-own-futures" id="implementing-our-own-futures">Implementing our own Futures</a></h2>
 <p>Let's start off by getting all our imports right away so you can follow along</p>
 <pre><code class="language-rust noplaypen ignore">use std::{
-    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
+    future::Future, pin::Pin, sync::{ mpsc::{channel, Sender}, Arc, Mutex,},
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
-    thread::{self, JoinHandle}, time::{Duration, Instant}
+    thread::{self, JoinHandle}, time::{Duration, Instant}, collections::HashMap
 };
 </code></pre>
 <h2><a class="header" href="#the-executor" id="the-executor">The Executor</a></h2>
@@ -2419,9 +2414,8 @@ struct MyWaker {
 #[derive(Clone)]
 pub struct Task {
     id: usize,
-    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+    reactor: Arc&lt;Mutex&lt;Box&lt;Reactor&gt;&gt;&gt;,
     data: u64,
-    is_registered: bool,
 }
 
 // These are function definitions we'll use for our waker. Remember the
@@ -2461,48 +2455,57 @@ fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
 }
 
 impl Task {
-    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
-        Task {
-            id,
-            reactor,
-            data,
-            is_registered: false,
-        }
+    fn new(reactor: Arc&lt;Mutex&lt;Box&lt;Reactor&gt;&gt;&gt;, data: u64, id: usize) -&gt; Self {
+        Task { id, reactor, data }
     }
 }
 
 // This is our `Future` implementation
 impl Future for Task {
-
-    // The output for our kind of `leaf future` is just an `usize`. For other
-    // futures this could be something more interesting like a byte array.
     type Output = usize;
-    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+
+    // Poll is the what drives the state machine forward and it's the only
+    // method we'll need to call to drive futures to completion.
+    fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+
+        // We need to get access the reactor in our `poll` method so we acquire
+        // a lock on that.
         let mut r = self.reactor.lock().unwrap();
 
-        // we check with the `Reactor` if this future is in its &quot;readylist&quot;
-        // i.e. if it's `Ready`
+        // First we check if the task is marked as ready
         if r.is_ready(self.id) {
 
-            // if it is, we return the data. In this case it's just the ID of
-            // the task since this is just a very simple example.
+            // If it's ready we set its state to `Finished`
+            *r.tasks.get_mut(&amp;self.id).unwrap() = TaskState::Finished;
             Poll::Ready(self.id)
-        } else if self.is_registered {
+        
+        // If it isn't finished we check the map we have stored in our Reactor
+        // over id's we have registered and see if it's there
+        } else if r.tasks.contains_key(&amp;self.id) {
 
-            // If the future is registered alredy, we just return `Pending`
+            // This is important. The docs says that on multiple calls to poll,
+            // only the Waker from the Context passed to the most recent call
+            // should be scheduled to receive a wakeup. That's why we insert
+            // this waker into the map (which will return the old one which will
+            // get dropped) before we return `Pending`.
+            r.tasks.insert(self.id, TaskState::NotReady(cx.waker().clone()));
             Poll::Pending
         } else {
 
-            // If we get here, it must be the first time this `Future` is polled
-            // so we register a task with our `reactor`
+            // If it's not ready, and not in the map it's a new task so we
+            // register that with the Reactor and return `Pending`
             r.register(self.data, cx.waker().clone(), self.id);
-
-            // oh, we have to drop the lock on our `Mutex` here because we can't
-            // have a shared and exclusive borrow at the same time
-            drop(r);
-            self.is_registered = true;
             Poll::Pending
         }
+
+        // Note that we're holding a lock on the `Mutex` which protects the
+        // Reactor all the way until the end of this scope. This means that
+        // even if our task were to complete immidiately, it will not be
+        // able to call `wake` while we're in our `Poll` method.
+
+        // Since we can make this guarantee, it's now the Executors job to
+        // handle this possible race condition where `Wake` is called after
+        // `poll` but before our thread goes to sleep.
     }
 }
 </code></pre>
@@ -2579,6 +2582,15 @@ for the sake of this example.</p>
 <p><strong>Our Reactor will look like this:</strong></p>
 <pre><code class="language-rust noplaypen ignore">// This is a &quot;fake&quot; reactor. It does no real I/O, but that also makes our
 // code possible to run in the book and in the playground
+// The different states a task can have in this Reactor
+enum TaskState {
+    Ready,
+    NotReady(Waker),
+    Finished,
+}
+
+// This is a &quot;fake&quot; reactor. It does no real I/O, but that also makes our
+// code possible to run in the book and in the playground
 struct Reactor {
 
     // we need some way of registering a Task with the reactor. Normally this
@@ -2586,106 +2598,118 @@ struct Reactor {
     dispatcher: Sender&lt;Event&gt;,
     handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
 
-    // This is a list of tasks that are ready, which means they should be polled
-    // for data.
-    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+    // This is a list of tasks
+    tasks: HashMap&lt;usize, TaskState&gt;,
 }
 
-// We just have two kind of events. An event called `Timeout`
-// and a `Close` event to close down our reactor.
+// This represents the Events we can send to our reactor thread. In this
+// example it's only a Timeout or a Close event.
 #[derive(Debug)]
 enum Event {
     Close,
-    Timeout(Waker, u64, usize),
+    Timeout(u64, usize),
 }
 
 impl Reactor {
-    fn new() -&gt; Self {
-        // The way we register new events with our reactor is using a regular
-        // channel
+
+    // We choose to return an atomic reference counted, mutex protected, heap
+    // allocated `Reactor`. Just to make it easy to explain... No, the reason
+    // we do this is:
+    //
+    // 1. We know that only thread-safe reactors will be created.
+    // 2. By heap allocating it we can obtain a reference to a stable address
+    // that's not dependent on the stack frame of the function that called `new`
+    fn new() -&gt; Arc&lt;Mutex&lt;Box&lt;Self&gt;&gt;&gt; {
         let (tx, rx) = channel::&lt;Event&gt;();
-        let readylist = Arc::new(Mutex::new(vec![]));
-        let rl_clone = readylist.clone();
+        let reactor = Arc::new(Mutex::new(Box::new(Reactor {
+            dispatcher: tx,
+            handle: None,
+            tasks: HashMap::new(),
+        })));
+        
+        // Notice that we'll need to use `weak` reference here. If we don't,
+        // our `Reactor` will not get `dropped` when our main thread is finished
+        // since we're holding internal references to it.
 
-        // This `Vec` will hold handles to all the threads we spawn so we can
-        // join them later on and finish our programm in a good manner
-        let mut handles = vec![];
+        // Since we're collecting all `JoinHandles` from the threads we spawn
+        // and make sure to join them we know that `Reactor` will be alive
+        // longer than any reference held by the threads we spawn here.
+        let reactor_clone = Arc::downgrade(&amp;reactor);
 
-        // This will be the &quot;Reactor thread&quot;
+        // This will be our Reactor-thread. The Reactor-thread will in our case
+        // just spawn new threads which will serve as timers for us.
         let handle = thread::spawn(move || {
+            let mut handles = vec![];
+
+            // This simulates some I/O resource
             for event in rx {
-                let rl_clone = rl_clone.clone();
+                println!(&quot;REACTOR: {:?}&quot;, event);
+                let reactor = reactor_clone.clone();
                 match event {
-
-                    // If we get a close event we break out of the loop we're in
                     Event::Close =&gt; break,
-                    Event::Timeout(waker, duration, id) =&gt; {
+                    Event::Timeout(duration, id) =&gt; {
 
-                        // When we get an event we simply spawn a new thread
-                        // which will simulate some I/O resource...
+                        // We spawn a new thread that will serve as a timer
+                        // and will call `wake` on the correct `Waker` once
+                        // it's done.
                         let event_handle = thread::spawn(move || {
-
-                            //... by sleeping for the number of seconds
-                            // we provided when creating the `Task`.
                             thread::sleep(Duration::from_secs(duration));
-
-                            // When it's done sleeping we put the ID of this task
-                            // on the &quot;readylist&quot;
-                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
-
-                            // Then we call `wake` which will wake up our
-                            // executor and start polling the futures
-                            waker.wake();
+                            let reactor = reactor.upgrade().unwrap();
+                            reactor.lock().map(|mut r| r.wake(id)).unwrap();
                         });
-
                         handles.push(event_handle);
                     }
                 }
             }
 
-            // When we exit the Reactor we first join all the handles on
-            // the child threads we've spawned so we catch any panics and
-            // release any resources.
-            for handle in handles {
-                handle.join().unwrap();
-            }
+            // This is important for us since we need to know that these
+            // threads don't live longer than our Reactor-thread. Our
+            // Reactor-thread will be joined when `Reactor` gets dropped.
+            handles.into_iter().for_each(|handle| handle.join().unwrap());
         });
+        reactor.lock().map(|mut r| r.handle = Some(handle)).unwrap();
+        reactor
+    }
 
-        Reactor {
-            readylist,
-            dispatcher: tx,
-            handle: Some(handle),
+    // The wake function will call wake on the waker for the task with the
+    // corresponding id.
+    fn wake(&amp;mut self, id: usize) {
+        self.tasks.get_mut(&amp;id).map(|state| {
+
+            // No matter what state the task was in we can safely set it
+            // to ready at this point. This lets us get ownership over the
+            // the data that was there before we replaced it.
+            match mem::replace(state, TaskState::Ready) {
+                TaskState::NotReady(waker) =&gt; waker.wake(),
+                TaskState::Finished =&gt; panic!(&quot;Called 'wake' twice on task: {}&quot;, id),
+                _ =&gt; unreachable!()
+            }
+        }).unwrap();
+    }
+
+    // Register a new task with the reactor. In this particular example
+    // we panic if a task with the same id get's registered twice 
+    fn register(&amp;mut self, duration: u64, waker: Waker, id: usize) {
+        if self.tasks.insert(id, TaskState::NotReady(waker)).is_some() {
+            panic!(&quot;Tried to insert a task with id: '{}', twice!&quot;, id);
         }
+        self.dispatcher.send(Event::Timeout(duration, id)).unwrap();
     }
 
-    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
-
-        // registering an event is as simple as sending an `Event` through
-        // the channel.
-        self.dispatcher
-            .send(Event::Timeout(waker, duration, data))
-            .unwrap();
-    }
-
+    // We send a close event to the reactor so it closes down our reactor-thread
     fn close(&amp;mut self) {
         self.dispatcher.send(Event::Close).unwrap();
     }
 
-    // We need a way to check if any event's are ready. This will simply
-    // look through the &quot;readylist&quot; for an event macthing the ID we want to
-    // check for.
-    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
-        self.readylist
-            .lock()
-            .map(|rl| rl.iter().any(|id| *id == id_to_check))
-            .unwrap()
+    // We simply checks if a task with this id is in the state `TaskState::Ready`
+    fn is_ready(&amp;self, id: usize) -&gt; bool {
+        self.tasks.get(&amp;id).map(|state| match state {
+            TaskState::Ready =&gt; true,
+            _ =&gt; false,
+        }).unwrap_or(false)
     }
 }
 
-// When our `Reactor` is dropped we join the reactor thread with the thread
-// owning our `Reactor` so we catch any panics and release all resources.
-// It's not needed for this to work, but it really is a best practice to join
-// all threads you spawn.
 impl Drop for Reactor {
     fn drop(&amp;mut self) {
         self.handle.take().map(|h| h.join().unwrap()).unwrap();
@@ -2698,22 +2722,18 @@ and make it sleep for some time which we specify when we create a <code>Task</co
 of seconds here, just give it some time to run.</p>
 <p>In the last chapter we have the <a href="./8_finished_example.html">whole 200 lines in an editable window</a>
 which you can edit and change the way you like.</p>
-<pre><pre class="playpen"><code class="language-rust edition2018"><span class="boring">use std::{
-</span><span class="boring">    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
-</span><span class="boring">    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
-</span><span class="boring">    thread::{self, JoinHandle}, time::{Duration, Instant}
-</span><span class="boring">};
-</span><span class="boring">
-</span>fn main() {
+<pre><pre class="playpen"><code class="language-rust edition2018"># use std::{
+#     future::Future, pin::Pin, sync::{ mpsc::{channel, Sender}, Arc, Mutex,},
+#     task::{Context, Poll, RawWaker, RawWakerVTable, Waker}, mem,
+#     thread::{self, JoinHandle}, time::{Duration, Instant}, collections::HashMap
+# };
+# 
+fn main() {
     // This is just to make it easier for us to see when our Future was resolved
     let start = Instant::now();
 
     // Many runtimes create a glocal `reactor` we pass it as an argument
     let reactor = Reactor::new();
-
-    // Since we'll share this between threads we wrap it in a 
-    // atmically-refcounted- mutex.
-    let reactor = Arc::new(Mutex::new(reactor));
     
     // We create two tasks:
     // - first parameter is the `reactor`
@@ -2751,163 +2771,174 @@ which you can edit and change the way you like.</p>
     // ends nicely.
     reactor.lock().map(|mut r| r.close()).unwrap();
 }
-
-<span class="boring">// ============================= EXECUTOR ====================================
-</span><span class="boring">fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
-</span><span class="boring">    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
-</span><span class="boring">    let waker = waker_into_waker(Arc::into_raw(mywaker));
-</span><span class="boring">    let mut cx = Context::from_waker(&amp;waker);
-</span><span class="boring">    let val = loop {
-</span><span class="boring">        let pinned = unsafe { Pin::new_unchecked(&amp;mut future) };
-</span><span class="boring">        match Future::poll(pinned, &amp;mut cx) {
-</span><span class="boring">            Poll::Ready(val) =&gt; break val,
-</span><span class="boring">            Poll::Pending =&gt; thread::park(),
-</span><span class="boring">        };
-</span><span class="boring">    };
-</span><span class="boring">    val
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">// ====================== FUTURE IMPLEMENTATION ==============================
-</span><span class="boring">#[derive(Clone)]
-</span><span class="boring">struct MyWaker {
-</span><span class="boring">    thread: thread::Thread,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[derive(Clone)]
-</span><span class="boring">pub struct Task {
-</span><span class="boring">    id: usize,
-</span><span class="boring">    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
-</span><span class="boring">    data: u64,
-</span><span class="boring">    is_registered: bool,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">fn mywaker_wake(s: &amp;MyWaker) {
-</span><span class="boring">    let waker_ptr: *const MyWaker = s;
-</span><span class="boring">    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
-</span><span class="boring">    waker_arc.thread.unpark();
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
-</span><span class="boring">    let arc = unsafe { Arc::from_raw(s).clone() };
-</span><span class="boring">    std::mem::forget(arc.clone()); // increase ref count
-</span><span class="boring">    RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">const VTABLE: RawWakerVTable = unsafe {
-</span><span class="boring">    RawWakerVTable::new(
-</span><span class="boring">        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
-</span><span class="boring">        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
-</span><span class="boring">        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
-</span><span class="boring">        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
-</span><span class="boring">    )
-</span><span class="boring">};
-</span><span class="boring">
-</span><span class="boring">fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
-</span><span class="boring">    let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
-</span><span class="boring">    unsafe { Waker::from_raw(raw_waker) }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Task {
-</span><span class="boring">    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
-</span><span class="boring">        Task {
-</span><span class="boring">            id,
-</span><span class="boring">            reactor,
-</span><span class="boring">            data,
-</span><span class="boring">            is_registered: false,
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Future for Task {
-</span><span class="boring">    type Output = usize;
-</span><span class="boring">    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
-</span><span class="boring">        let mut r = self.reactor.lock().unwrap();
-</span><span class="boring">        if r.is_ready(self.id) {
-</span><span class="boring">            Poll::Ready(self.id)
-</span><span class="boring">        } else if self.is_registered {
-</span><span class="boring">            Poll::Pending
-</span><span class="boring">        } else {
-</span><span class="boring">            r.register(self.data, cx.waker().clone(), self.id);
-</span><span class="boring">            drop(r);
-</span><span class="boring">            self.is_registered = true;
-</span><span class="boring">            Poll::Pending
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">// =============================== REACTOR ===================================
-</span><span class="boring">struct Reactor {
-</span><span class="boring">    dispatcher: Sender&lt;Event&gt;,
-</span><span class="boring">    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
-</span><span class="boring">    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
-</span><span class="boring">}
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">enum Event {
-</span><span class="boring">    Close,
-</span><span class="boring">    Timeout(Waker, u64, usize),
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Reactor {
-</span><span class="boring">    fn new() -&gt; Self {
-</span><span class="boring">        let (tx, rx) = channel::&lt;Event&gt;();
-</span><span class="boring">        let readylist = Arc::new(Mutex::new(vec![]));
-</span><span class="boring">        let rl_clone = readylist.clone();
-</span><span class="boring">        let mut handles = vec![];
-</span><span class="boring">        let handle = thread::spawn(move || {
-</span><span class="boring">            // This simulates some I/O resource
-</span><span class="boring">            for event in rx {
-</span><span class="boring">                println!(&quot;REACTOR: {:?}&quot;, event);
-</span><span class="boring">                let rl_clone = rl_clone.clone();
-</span><span class="boring">                match event {
-</span><span class="boring">                    Event::Close =&gt; break,
-</span><span class="boring">                    Event::Timeout(waker, duration, id) =&gt; {
-</span><span class="boring">                        let event_handle = thread::spawn(move || {
-</span><span class="boring">                            thread::sleep(Duration::from_secs(duration));
-</span><span class="boring">                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
-</span><span class="boring">                            waker.wake();
-</span><span class="boring">                        });
-</span><span class="boring">
-</span><span class="boring">                        handles.push(event_handle);
-</span><span class="boring">                    }
-</span><span class="boring">                }
-</span><span class="boring">            }
-</span><span class="boring">
-</span><span class="boring">            for handle in handles {
-</span><span class="boring">                handle.join().unwrap();
-</span><span class="boring">            }
-</span><span class="boring">        });
-</span><span class="boring">
-</span><span class="boring">        Reactor {
-</span><span class="boring">            readylist,
-</span><span class="boring">            dispatcher: tx,
-</span><span class="boring">            handle: Some(handle),
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
-</span><span class="boring">        self.dispatcher
-</span><span class="boring">            .send(Event::Timeout(waker, duration, data))
-</span><span class="boring">            .unwrap();
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn close(&amp;mut self) {
-</span><span class="boring">        self.dispatcher.send(Event::Close).unwrap();
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
-</span><span class="boring">        self.readylist
-</span><span class="boring">            .lock()
-</span><span class="boring">            .map(|rl| rl.iter().any(|id| *id == id_to_check))
-</span><span class="boring">            .unwrap()
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Drop for Reactor {
-</span><span class="boring">    fn drop(&amp;mut self) {
-</span><span class="boring">        self.handle.take().map(|h| h.join().unwrap()).unwrap();
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
+# // ============================= EXECUTOR ====================================
+# fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
+#     let mywaker = Arc::new(MyWaker {
+#         thread: thread::current(),
+#     });
+#     let waker = waker_into_waker(Arc::into_raw(mywaker));
+#     let mut cx = Context::from_waker(&amp;waker);
+# 
+#     // SAFETY: we shadow `future` so it can't be accessed again.
+#     let mut future = unsafe { Pin::new_unchecked(&amp;mut future) };
+#     let val = loop {
+#         match Future::poll(future.as_mut(), &amp;mut cx) {
+#             Poll::Ready(val) =&gt; break val,
+#             Poll::Pending =&gt; thread::park(),
+#         };
+#     };
+#     val
+# }
+# 
+# // ====================== FUTURE IMPLEMENTATION ==============================
+# #[derive(Clone)]
+# struct MyWaker {
+#     thread: thread::Thread,
+# }
+# 
+# #[derive(Clone)]
+# pub struct Task {
+#     id: usize,
+#     reactor: Arc&lt;Mutex&lt;Box&lt;Reactor&gt;&gt;&gt;,
+#     data: u64,
+# }
+# 
+# fn mywaker_wake(s: &amp;MyWaker) {
+#     let waker_ptr: *const MyWaker = s;
+#     let waker_arc = unsafe { Arc::from_raw(waker_ptr) };
+#     waker_arc.thread.unpark();
+# }
+# 
+# fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
+#     let arc = unsafe { Arc::from_raw(s) };
+#     std::mem::forget(arc.clone()); // increase ref count
+#     RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
+# }
+# 
+# const VTABLE: RawWakerVTable = unsafe {
+#     RawWakerVTable::new(
+#         |s| mywaker_clone(&amp;*(s as *const MyWaker)),   // clone
+#         |s| mywaker_wake(&amp;*(s as *const MyWaker)),    // wake
+#         |s| mywaker_wake(*(s as *const &amp;MyWaker)),    // wake by ref
+#         |s| drop(Arc::from_raw(s as *const MyWaker)), // decrease refcount
+#     )
+# };
+# 
+# fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
+#     let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
+#     unsafe { Waker::from_raw(raw_waker) }
+# }
+# 
+# impl Task {
+#     fn new(reactor: Arc&lt;Mutex&lt;Box&lt;Reactor&gt;&gt;&gt;, data: u64, id: usize) -&gt; Self {
+#         Task { id, reactor, data }
+#     }
+# }
+# 
+# impl Future for Task {
+#     type Output = usize;
+#     fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+#         let mut r = self.reactor.lock().unwrap();
+#         if r.is_ready(self.id) {
+#             *r.tasks.get_mut(&amp;self.id).unwrap() = TaskState::Finished;
+#             Poll::Ready(self.id)
+#         } else if r.tasks.contains_key(&amp;self.id) {
+#             r.tasks.insert(self.id, TaskState::NotReady(cx.waker().clone()));
+#             Poll::Pending
+#         } else {
+#             r.register(self.data, cx.waker().clone(), self.id);
+#             Poll::Pending
+#         }
+#     }
+# }
+# 
+# // =============================== REACTOR ===================================
+# enum TaskState {
+#     Ready,
+#     NotReady(Waker),
+#     Finished,
+# }
+# struct Reactor {
+#     dispatcher: Sender&lt;Event&gt;,
+#     handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+#     tasks: HashMap&lt;usize, TaskState&gt;,
+# }
+# 
+# #[derive(Debug)]
+# enum Event {
+#     Close,
+#     Timeout(u64, usize),
+# }
+# 
+# impl Reactor {
+#     fn new() -&gt; Arc&lt;Mutex&lt;Box&lt;Self&gt;&gt;&gt; {
+#         let (tx, rx) = channel::&lt;Event&gt;();
+#         let reactor = Arc::new(Mutex::new(Box::new(Reactor {
+#             dispatcher: tx,
+#             handle: None,
+#             tasks: HashMap::new(),
+#         })));
+#         
+#         let reactor_clone = Arc::downgrade(&amp;reactor);
+#         let handle = thread::spawn(move || {
+#             let mut handles = vec![];
+#             // This simulates some I/O resource
+#             for event in rx {
+#                 println!(&quot;REACTOR: {:?}&quot;, event);
+#                 let reactor = reactor_clone.clone();
+#                 match event {
+#                     Event::Close =&gt; break,
+#                     Event::Timeout(duration, id) =&gt; {
+#                         let event_handle = thread::spawn(move || {
+#                             thread::sleep(Duration::from_secs(duration));
+#                             let reactor = reactor.upgrade().unwrap();
+#                             reactor.lock().map(|mut r| r.wake(id)).unwrap();
+#                         });
+#                         handles.push(event_handle);
+#                     }
+#                 }
+#             }
+#             handles.into_iter().for_each(|handle| handle.join().unwrap());
+#         });
+#         reactor.lock().map(|mut r| r.handle = Some(handle)).unwrap();
+#         reactor
+#     }
+# 
+#     fn wake(&amp;mut self, id: usize) {
+#         self.tasks.get_mut(&amp;id).map(|state| {
+#             match mem::replace(state, TaskState::Ready) {
+#                 TaskState::NotReady(waker) =&gt; waker.wake(),
+#                 TaskState::Finished =&gt; panic!(&quot;Called 'wake' twice on task: {}&quot;, id),
+#                 _ =&gt; unreachable!()
+#             }
+#         }).unwrap();
+#     }
+# 
+#     fn register(&amp;mut self, duration: u64, waker: Waker, id: usize) {
+#         if self.tasks.insert(id, TaskState::NotReady(waker)).is_some() {
+#             panic!(&quot;Tried to insert a task with id: '{}', twice!&quot;, id);
+#         }
+#         self.dispatcher.send(Event::Timeout(duration, id)).unwrap();
+#     }
+# 
+#     fn close(&amp;mut self) {
+#         self.dispatcher.send(Event::Close).unwrap();
+#     }
+# 
+#     fn is_ready(&amp;self, id: usize) -&gt; bool {
+#         self.tasks.get(&amp;id).map(|state| match state {
+#             TaskState::Ready =&gt; true,
+#             _ =&gt; false,
+#         }).unwrap_or(false)
+#     }
+# }
+# 
+# impl Drop for Reactor {
+#     fn drop(&amp;mut self) {
+#         self.handle.take().map(|h| h.join().unwrap()).unwrap();
+#     }
+# }
+</code></pre></pre>
 <p>I added a debug printout of the events the reactor registered interest for so we can observe
 two things:</p>
 <ol>
@@ -2957,16 +2988,9 @@ do really hope that you do continue to explore further.</p>
 <h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
 <p>Here is the whole example. You can edit it right here in your browser and
 run it yourself. Have fun!</p>
-<pre><pre class="playpen"><code class="language-rust editable edition2018">use std::{
-    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
-    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
-    thread::{self, JoinHandle}, time::{Duration, Instant}
-};
-
-fn main() {
+<pre><pre class="playpen"><code class="language-rust editable edition2018">fn main() {
     let start = Instant::now();
     let reactor = Reactor::new();
-    let reactor = Arc::new(Mutex::new(reactor));
     let future1 = Task::new(reactor.clone(), 1, 1);
     let future2 = Task::new(reactor.clone(), 2, 2);
 
@@ -2990,10 +3014,17 @@ fn main() {
     block_on(mainfut);
     reactor.lock().map(|mut r| r.close()).unwrap();
 }
+use std::{
+    future::Future, pin::Pin, sync::{ mpsc::{channel, Sender}, Arc, Mutex,},
+    task::{Context, Poll, RawWaker, RawWakerVTable, Waker}, mem,
+    thread::{self, JoinHandle}, time::{Duration, Instant}, collections::HashMap
+};
 
 // ============================= EXECUTOR ====================================
 fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
-    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    let mywaker = Arc::new(MyWaker {
+        thread: thread::current(),
+    });
     let waker = waker_into_waker(Arc::into_raw(mywaker));
     let mut cx = Context::from_waker(&amp;waker);
 
@@ -3017,14 +3048,13 @@ struct MyWaker {
 #[derive(Clone)]
 pub struct Task {
     id: usize,
-    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+    reactor: Arc&lt;Mutex&lt;Box&lt;Reactor&gt;&gt;&gt;,
     data: u64,
-    is_registered: bool,
 }
 
 fn mywaker_wake(s: &amp;MyWaker) {
     let waker_ptr: *const MyWaker = s;
-    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
+    let waker_arc = unsafe { Arc::from_raw(waker_ptr) };
     waker_arc.thread.unpark();
 }
 
@@ -3036,10 +3066,10 @@ fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
 
 const VTABLE: RawWakerVTable = unsafe {
     RawWakerVTable::new(
-        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
-        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
-        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
-        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
+        |s| mywaker_clone(&amp;*(s as *const MyWaker)),   // clone
+        |s| mywaker_wake(&amp;*(s as *const MyWaker)),    // wake
+        |s| mywaker_wake(*(s as *const &amp;MyWaker)),    // wake by ref
+        |s| drop(Arc::from_raw(s as *const MyWaker)), // decrease refcount
     )
 };
 
@@ -3049,97 +3079,106 @@ fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
 }
 
 impl Task {
-    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
-        Task {
-            id,
-            reactor,
-            data,
-            is_registered: false,
-        }
+    fn new(reactor: Arc&lt;Mutex&lt;Box&lt;Reactor&gt;&gt;&gt;, data: u64, id: usize) -&gt; Self {
+        Task { id, reactor, data }
     }
 }
 
 impl Future for Task {
     type Output = usize;
-    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+    fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
         let mut r = self.reactor.lock().unwrap();
         if r.is_ready(self.id) {
+            *r.tasks.get_mut(&amp;self.id).unwrap() = TaskState::Finished;
             Poll::Ready(self.id)
-        } else if self.is_registered {
+        } else if r.tasks.contains_key(&amp;self.id) {
+            r.tasks.insert(self.id, TaskState::NotReady(cx.waker().clone()));
             Poll::Pending
         } else {
             r.register(self.data, cx.waker().clone(), self.id);
-            drop(r);
-            self.is_registered = true;
             Poll::Pending
         }
     }
 }
 
 // =============================== REACTOR ===================================
+enum TaskState {
+    Ready,
+    NotReady(Waker),
+    Finished,
+}
 struct Reactor {
     dispatcher: Sender&lt;Event&gt;,
     handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
-    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+    tasks: HashMap&lt;usize, TaskState&gt;,
 }
+
 #[derive(Debug)]
 enum Event {
     Close,
-    Timeout(Waker, u64, usize),
+    Timeout(u64, usize),
 }
 
 impl Reactor {
-    fn new() -&gt; Self {
+    fn new() -&gt; Arc&lt;Mutex&lt;Box&lt;Self&gt;&gt;&gt; {
         let (tx, rx) = channel::&lt;Event&gt;();
-        let readylist = Arc::new(Mutex::new(vec![]));
-        let rl_clone = readylist.clone();
-        let mut handles = vec![];
+        let reactor = Arc::new(Mutex::new(Box::new(Reactor {
+            dispatcher: tx,
+            handle: None,
+            tasks: HashMap::new(),
+        })));
+        
+        let reactor_clone = Arc::downgrade(&amp;reactor);
         let handle = thread::spawn(move || {
+            let mut handles = vec![];
             // This simulates some I/O resource
             for event in rx {
                 println!(&quot;REACTOR: {:?}&quot;, event);
-                let rl_clone = rl_clone.clone();
+                let reactor = reactor_clone.clone();
                 match event {
                     Event::Close =&gt; break,
-                    Event::Timeout(waker, duration, id) =&gt; {
+                    Event::Timeout(duration, id) =&gt; {
                         let event_handle = thread::spawn(move || {
                             thread::sleep(Duration::from_secs(duration));
-                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
-                            waker.wake();
+                            let reactor = reactor.upgrade().unwrap();
+                            reactor.lock().map(|mut r| r.wake(id)).unwrap();
                         });
-
                         handles.push(event_handle);
                     }
                 }
             }
-
-            for handle in handles {
-                handle.join().unwrap();
-            }
+            handles.into_iter().for_each(|handle| handle.join().unwrap());
         });
-
-        Reactor {
-            readylist,
-            dispatcher: tx,
-            handle: Some(handle),
-        }
+        reactor.lock().map(|mut r| r.handle = Some(handle)).unwrap();
+        reactor
     }
 
-    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
-        self.dispatcher
-            .send(Event::Timeout(waker, duration, data))
-            .unwrap();
+    fn wake(&amp;mut self, id: usize) {
+        self.tasks.get_mut(&amp;id).map(|state| {
+            match mem::replace(state, TaskState::Ready) {
+                TaskState::NotReady(waker) =&gt; waker.wake(),
+                TaskState::Finished =&gt; panic!(&quot;Called 'wake' twice on task: {}&quot;, id),
+                _ =&gt; unreachable!()
+            }
+        }).unwrap();
+    }
+
+    fn register(&amp;mut self, duration: u64, waker: Waker, id: usize) {
+        if self.tasks.insert(id, TaskState::NotReady(waker)).is_some() {
+            panic!(&quot;Tried to insert a task with id: '{}', twice!&quot;, id);
+        }
+        self.dispatcher.send(Event::Timeout(duration, id)).unwrap();
     }
 
     fn close(&amp;mut self) {
         self.dispatcher.send(Event::Close).unwrap();
     }
 
-    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
-        self.readylist
-            .lock()
-            .map(|rl| rl.iter().any(|id| *id == id_to_check))
-            .unwrap()
+    fn is_ready(&amp;self, id: usize) -&gt; bool {
+        self.tasks.get(&amp;id).map(|state| match state {
+            TaskState::Ready =&gt; true,
+            _ =&gt; false,
+        }).unwrap_or(false)
     }
 }
 
@@ -3252,18 +3291,6 @@ linked to in the book, here are some of my suggestions:</p>
                 ga('create', 'UA-157536992-1', 'auto');
                 ga('send', 'pageview');
             }
-        </script>
-        
-
-        
-        <script type="text/javascript">
-            window.playpen_line_numbers = true;
-        </script>
-        
-        
-        
-        <script type="text/javascript">
-            window.playpen_copyable = true;
         </script>
         
 

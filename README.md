@@ -43,6 +43,10 @@ Feedback, questions or discussion is welcome in the issue tracker.
 
 **2020-04-06:** Final draft finished
 
+**2020-04-10:** Rather substantial rewrite of the `Reactor` to better the 
+readability and make it easier to reason about. In addition I fixed a mistake
+in the `Poll` method and a possible race condition. See #2 for more details.
+
 ## License
 
 This book is MIT licensed.

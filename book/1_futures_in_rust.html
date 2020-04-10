@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="sidebar-visible no-js">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -32,11 +32,11 @@
 
         
     </head>
-    <body>
+    <body class="light">
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+            var default_theme = "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -60,11 +60,8 @@
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            var html = document.querySelector('html');
-            html.classList.remove('no-js')
-            html.classList.remove('light')
-            html.classList.add(theme);
-            html.classList.add('js');
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
@@ -80,8 +77,8 @@
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded affix "><a href="introduction.html">Introduction</a></li><li class="expanded "><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li class="expanded "><a href="1_futures_in_rust.html" class="active"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li class="expanded "><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li class="expanded "><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li class="expanded "><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li class="expanded "><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li class="expanded "><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="expanded affix "><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html" class="active"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -197,7 +194,7 @@ a runtime, but we'll go through how they're constructed in this book as well.</p
 <p>It's also unlikely that you'll pass a leaf-future to a runtime and run it to
 completion alone as you'll understand by reading the next paragraph.</p>
 <h3><a class="header" href="#non-leaf-futures" id="non-leaf-futures">Non-leaf-futures</a></h3>
-<p>Non-leaf-futures is the kind of futures we as <em>users</em> of a runtime writes
+<p>Non-leaf-futures is the kind of futures we as <em>users</em> of a runtime write
 ourselves using the <code>async</code> keyword to create a <strong>task</strong> which can be run on the
 executor.</p>
 <p>The bulk of an async program will consist of non-leaf-futures, which are a kind
@@ -242,7 +239,7 @@ you'll just use the one provided for you.</p>
 notifying a <code>Future</code> that it can do more work, and actually doing the work
 on the <code>Future</code>.</p>
 <p>You can think of the former as the reactor's job, and the latter as the
-executors job. These two parts of a runtime interacts using the <code>Waker</code> type.</p>
+executors job. These two parts of a runtime interact with each other using the <code>Waker</code> type.</p>
 <p>The two most popular runtimes for <code>Futures</code> as of writing this is:</p>
 <ul>
 <li><a href="https://github.com/async-rs/async-std">async-std</a></li>
@@ -399,18 +396,6 @@ it needs to be, so go on and read these chapters if you feel a bit unsure. </p>
                 ga('create', 'UA-157536992-1', 'auto');
                 ga('send', 'pageview');
             }
-        </script>
-        
-
-        
-        <script type="text/javascript">
-            window.playpen_line_numbers = true;
-        </script>
-        
-        
-        
-        <script type="text/javascript">
-            window.playpen_copyable = true;
         </script>
         
 
