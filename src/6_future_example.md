@@ -576,12 +576,15 @@ fn main() {
 #     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
 #         let mut r = self.reactor.lock().unwrap();
 #         if r.is_ready(self.id) {
+#             println!("POLL: TASK {} IS READY", self.id);
 #             *r.tasks.get_mut(&self.id).unwrap() = TaskState::Finished;
 #             Poll::Ready(self.id)
 #         } else if r.tasks.contains_key(&self.id) {
+#             println!("POLL: REPLACED WAKER FOR TASK: {}", self.id);
 #             r.tasks.insert(self.id, TaskState::NotReady(cx.waker().clone()));
 #             Poll::Pending
 #         } else {
+#             println!("POLL: REGISTERED TASK: {}, WAKER: {:?}", self.id, cx.waker());
 #             r.register(self.data, cx.waker().clone(), self.id);
 #             Poll::Pending
 #         }
@@ -676,11 +679,10 @@ fn main() {
 # }
 ```
 
-I added a debug printout of the events the reactor registered interest for so we can observe
-two things:
+I added a some debug printouts so we can observe a couple of things:
 
 1. How the `Waker` object looks just like the _trait object_ we talked about in an earlier chapter
-2. In what order the events register interest with the reactor
+2. The program flow from start to finish
 
 The last point is relevant when we move on the the last paragraph.
 

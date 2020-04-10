@@ -106,12 +106,15 @@ impl Future for Task {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut r = self.reactor.lock().unwrap();
         if r.is_ready(self.id) {
+            println!("POLL: TASK {} IS READY", self.id);
             *r.tasks.get_mut(&self.id).unwrap() = TaskState::Finished;
             Poll::Ready(self.id)
         } else if r.tasks.contains_key(&self.id) {
+            println!("POLL: REPLACED WAKER FOR TASK: {}", self.id);
             r.tasks.insert(self.id, TaskState::NotReady(cx.waker().clone()));
             Poll::Pending
         } else {
+            println!("POLL: REGISTERED TASK: {}, WAKER: {:?}", self.id, cx.waker());
             r.register(self.data, cx.waker().clone(), self.id);
             Poll::Pending
         }
@@ -148,9 +151,7 @@ impl Reactor {
         let reactor_clone = Arc::downgrade(&reactor);
         let handle = thread::spawn(move || {
             let mut handles = vec![];
-            // This simulates some I/O resource
             for event in rx {
-                println!("REACTOR: {:?}", event);
                 let reactor = reactor_clone.clone();
                 match event {
                     Event::Close => break,

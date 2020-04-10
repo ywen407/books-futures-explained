@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js">
+<html lang="en" class="sidebar-visible no-js light">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -32,11 +32,11 @@
 
         
     </head>
-    <body class="light">
+    <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "";
-            var default_theme = "light";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -60,8 +60,11 @@
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            document.body.className = theme;
-            document.querySelector('html').className = theme + ' js';
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
@@ -77,8 +80,8 @@
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_async_await.html" class="active"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+            <div id="sidebar-scrollbox" class="sidebar-scrollbox">
+                <ol class="chapter"><li class="expanded affix "><a href="introduction.html">Introduction</a></li><li class="expanded "><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li class="expanded "><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li class="expanded "><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li class="expanded "><a href="3_generators_async_await.html" class="active"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li class="expanded "><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li class="expanded "><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li class="expanded "><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="expanded affix "><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -360,19 +363,19 @@ trait for our generators which would let us do this:</p>
 Just keep this in the back of your head as we move forward.</p>
 <p>Now what does our rewritten state machine look like with this example?</p>
 <pre><pre class="playpen"><code class="language-rust compile_fail">
-# #![allow(unused_variables)]
-#fn main() {
-# enum GeneratorState&lt;Y, R&gt; {
-#     Yielded(Y),
-#     Complete(R),
-# }
-#
-# trait Generator {
-#     type Yield;
-#     type Return;
-#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
-# }
-
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span><span class="boring">enum GeneratorState&lt;Y, R&gt; {
+</span><span class="boring">    Yielded(Y),
+</span><span class="boring">    Complete(R),
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Generator {
+</span><span class="boring">    type Yield;
+</span><span class="boring">    type Return;
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+</span><span class="boring">}
+</span>
 enum GeneratorA {
     Enter,
     Yield1 {
@@ -382,12 +385,12 @@ enum GeneratorA {
     Exit,
 }
 
-# impl GeneratorA {
-#     fn start() -&gt; Self {
-#         GeneratorA::Enter
-#     }
-# }
-
+<span class="boring">impl GeneratorA {
+</span><span class="boring">    fn start() -&gt; Self {
+</span><span class="boring">        GeneratorA::Enter
+</span><span class="boring">    }
+</span><span class="boring">}
+</span>
 impl Generator for GeneratorA {
     type Yield = usize;
     type Return = ();
@@ -412,7 +415,8 @@ impl Generator for GeneratorA {
         }
     }
 }
-#}</code></pre></pre>
+<span class="boring">}
+</span></code></pre></pre>
 <p>If you try to compile this you'll get an error (just try it yourself by pressing play).</p>
 <p>What is the lifetime of <code>&amp;String</code>. It's not the same as the lifetime of <code>Self</code>. It's not <code>static</code>.
 Turns out that it's not possible for us in Rusts syntax to describe this lifetime, which means, that
@@ -423,9 +427,9 @@ see we end up in a <em>self referential struct</em>. A struct which holds refere
 into itself.</p>
 <p>As you'll notice, this compiles just fine!</p>
 <pre><pre class="playpen"><code class="language-rust">
-# #![allow(unused_variables)]
-#fn main() {
-enum GeneratorState&lt;Y, R&gt; {
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>enum GeneratorState&lt;Y, R&gt; {
     Yielded(Y),
     Complete(R),
 }
@@ -479,7 +483,8 @@ impl Generator for GeneratorA {
         }
     }
 }
-#}</code></pre></pre>
+<span class="boring">}
+</span></code></pre></pre>
 <p>Remember that our example is the generator we crated which looked like this:</p>
 <pre><code class="language-rust noplaypen ignore">let mut gen = move || {
         let to_borrow = String::from(&quot;Hello&quot;);
@@ -506,66 +511,66 @@ does what we'd expect. But there is still one huge problem with this:</p>
         ()
     };
 }
-# enum GeneratorState&lt;Y, R&gt; {
-#     Yielded(Y),
-#     Complete(R),
-# }
-#
-# trait Generator {
-#     type Yield;
-#     type Return;
-#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
-# }
-#
-# enum GeneratorA {
-#     Enter,
-#     Yield1 {
-#         to_borrow: String,
-#         borrowed: *const String,
-#     },
-#     Exit,
-# }
-#
-# impl GeneratorA {
-#     fn start() -&gt; Self {
-#         GeneratorA::Enter
-#     }
-# }
-# impl Generator for GeneratorA {
-#     type Yield = usize;
-#     type Return = ();
-#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
-#             match self {
-#             GeneratorA::Enter =&gt; {
-#                 let to_borrow = String::from(&quot;Hello&quot;);
-#                 let borrowed = &amp;to_borrow;
-#                 let res = borrowed.len();
-#                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-#
-#                 // We set the self-reference here
-#                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
-#                     *borrowed = to_borrow;
-#                 }
-#
-#                 GeneratorState::Yielded(res)
-#             }
-#
-#             GeneratorA::Yield1 {borrowed, ..} =&gt; {
-#                 let borrowed: &amp;String = unsafe {&amp;**borrowed};
-#                 println!(&quot;{} world&quot;, borrowed);
-#                 *self = GeneratorA::Exit;
-#                 GeneratorState::Complete(())
-#             }
-#             GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
-#         }
-#     }
-# }
-</code></pre></pre>
+<span class="boring">enum GeneratorState&lt;Y, R&gt; {
+</span><span class="boring">    Yielded(Y),
+</span><span class="boring">    Complete(R),
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Generator {
+</span><span class="boring">    type Yield;
+</span><span class="boring">    type Return;
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">enum GeneratorA {
+</span><span class="boring">    Enter,
+</span><span class="boring">    Yield1 {
+</span><span class="boring">        to_borrow: String,
+</span><span class="boring">        borrowed: *const String,
+</span><span class="boring">    },
+</span><span class="boring">    Exit,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl GeneratorA {
+</span><span class="boring">    fn start() -&gt; Self {
+</span><span class="boring">        GeneratorA::Enter
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">impl Generator for GeneratorA {
+</span><span class="boring">    type Yield = usize;
+</span><span class="boring">    type Return = ();
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+</span><span class="boring">            match self {
+</span><span class="boring">            GeneratorA::Enter =&gt; {
+</span><span class="boring">                let to_borrow = String::from(&quot;Hello&quot;);
+</span><span class="boring">                let borrowed = &amp;to_borrow;
+</span><span class="boring">                let res = borrowed.len();
+</span><span class="boring">                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+</span><span class="boring">
+</span><span class="boring">                // We set the self-reference here
+</span><span class="boring">                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+</span><span class="boring">                    *borrowed = to_borrow;
+</span><span class="boring">                }
+</span><span class="boring">
+</span><span class="boring">                GeneratorState::Yielded(res)
+</span><span class="boring">            }
+</span><span class="boring">
+</span><span class="boring">            GeneratorA::Yield1 {borrowed, ..} =&gt; {
+</span><span class="boring">                let borrowed: &amp;String = unsafe {&amp;**borrowed};
+</span><span class="boring">                println!(&quot;{} world&quot;, borrowed);
+</span><span class="boring">                *self = GeneratorA::Exit;
+</span><span class="boring">                GeneratorState::Complete(())
+</span><span class="boring">            }
+</span><span class="boring">            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
 <p>The problem is that in safe Rust we can still do this:</p>
 <p><em>Run the code and compare the results. Do you see the problem?</em></p>
-<pre><pre class="playpen"><code class="language-rust should_panic"># #![feature(never_type)] // Force nightly compiler to be used in playground
-# // by betting on it's true that this type is named after it's stabilization date...
-pub fn main() {
+<pre><pre class="playpen"><code class="language-rust should_panic"><span class="boring">#![feature(never_type)] // Force nightly compiler to be used in playground
+</span><span class="boring">// by betting on it's true that this type is named after it's stabilization date...
+</span>pub fn main() {
     let mut gen = GeneratorA::start();
     let mut gen2 = GeneratorA::start();
 
@@ -584,61 +589,61 @@ pub fn main() {
         ()
     };
 }
-# enum GeneratorState&lt;Y, R&gt; {
-#     Yielded(Y),
-#     Complete(R),
-# }
-#
-# trait Generator {
-#     type Yield;
-#     type Return;
-#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
-# }
-#
-# enum GeneratorA {
-#     Enter,
-#     Yield1 {
-#         to_borrow: String,
-#         borrowed: *const String,
-#     },
-#     Exit,
-# }
-#
-# impl GeneratorA {
-#     fn start() -&gt; Self {
-#         GeneratorA::Enter
-#     }
-# }
-# impl Generator for GeneratorA {
-#     type Yield = usize;
-#     type Return = ();
-#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
-#             match self {
-#             GeneratorA::Enter =&gt; {
-#                 let to_borrow = String::from(&quot;Hello&quot;);
-#                 let borrowed = &amp;to_borrow;
-#                 let res = borrowed.len();
-#                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-#
-#                 // We set the self-reference here
-#                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
-#                     *borrowed = to_borrow;
-#                 }
-#
-#                 GeneratorState::Yielded(res)
-#             }
-#
-#             GeneratorA::Yield1 {borrowed, ..} =&gt; {
-#                 let borrowed: &amp;String = unsafe {&amp;**borrowed};
-#                 println!(&quot;{} world&quot;, borrowed);
-#                 *self = GeneratorA::Exit;
-#                 GeneratorState::Complete(())
-#             }
-#             GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
-#         }
-#     }
-# }
-</code></pre></pre>
+<span class="boring">enum GeneratorState&lt;Y, R&gt; {
+</span><span class="boring">    Yielded(Y),
+</span><span class="boring">    Complete(R),
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Generator {
+</span><span class="boring">    type Yield;
+</span><span class="boring">    type Return;
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">enum GeneratorA {
+</span><span class="boring">    Enter,
+</span><span class="boring">    Yield1 {
+</span><span class="boring">        to_borrow: String,
+</span><span class="boring">        borrowed: *const String,
+</span><span class="boring">    },
+</span><span class="boring">    Exit,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl GeneratorA {
+</span><span class="boring">    fn start() -&gt; Self {
+</span><span class="boring">        GeneratorA::Enter
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">impl Generator for GeneratorA {
+</span><span class="boring">    type Yield = usize;
+</span><span class="boring">    type Return = ();
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+</span><span class="boring">            match self {
+</span><span class="boring">            GeneratorA::Enter =&gt; {
+</span><span class="boring">                let to_borrow = String::from(&quot;Hello&quot;);
+</span><span class="boring">                let borrowed = &amp;to_borrow;
+</span><span class="boring">                let res = borrowed.len();
+</span><span class="boring">                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+</span><span class="boring">
+</span><span class="boring">                // We set the self-reference here
+</span><span class="boring">                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+</span><span class="boring">                    *borrowed = to_borrow;
+</span><span class="boring">                }
+</span><span class="boring">
+</span><span class="boring">                GeneratorState::Yielded(res)
+</span><span class="boring">            }
+</span><span class="boring">
+</span><span class="boring">            GeneratorA::Yield1 {borrowed, ..} =&gt; {
+</span><span class="boring">                let borrowed: &amp;String = unsafe {&amp;**borrowed};
+</span><span class="boring">                println!(&quot;{} world&quot;, borrowed);
+</span><span class="boring">                *self = GeneratorA::Exit;
+</span><span class="boring">                GeneratorState::Complete(())
+</span><span class="boring">            }
+</span><span class="boring">            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
 <p>Wait? What happened to &quot;Hello&quot;? And why did our code segfault?</p>
 <p>Turns out that while the example above compiles just fine, we expose consumers
 of this this API to both possible undefined behavior and other memory errors
@@ -801,6 +806,18 @@ pub fn main() {
                 ga('create', 'UA-157536992-1', 'auto');
                 ga('send', 'pageview');
             }
+        </script>
+        
+
+        
+        <script type="text/javascript">
+            window.playpen_line_numbers = true;
+        </script>
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
         </script>
         
 
