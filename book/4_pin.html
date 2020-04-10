@@ -177,7 +177,7 @@ that it's time to lay down the work and start over tomorrow with a fresh mind.</
 </blockquote>
 <p>On a more serious note, I feel obliged to mention that there are valid reasons
 for the names that were chosen. Naming is not easy, and I considered renaming
-<code>Unpin</code> and <code>!Unpin</code> in this book to make them easier to reason about. </p>
+<code>Unpin</code> and <code>!Unpin</code> in this book to make them easier to reason about.</p>
 <p>However, an experienced member of the Rust community convinced me that that there
 is just too many nuances and edge-cases to consider which is easily overlooked when
 naively giving these markers different names, and I'm convinced that we'll
@@ -211,11 +211,11 @@ impl Test {
         let self_ref: *const String = &amp;self.a;
         self.b = self_ref;
     }
-    
+
     fn a(&amp;self) -&gt; &amp;str {
         &amp;self.a
-    } 
-    
+    }
+
     fn b(&amp;self) -&gt; &amp;String {
         unsafe {&amp;*(self.b)}
     }
@@ -246,7 +246,7 @@ you see, this works as expected:</p>
 #     a: String,
 #     b: *const String,
 # }
-# 
+#
 # impl Test {
 #     fn new(txt: &amp;str) -&gt; Self {
 #         let a = String::from(txt);
@@ -255,17 +255,17 @@ you see, this works as expected:</p>
 #             b: std::ptr::null(),
 #         }
 #     }
-# 
+#
 #     // We need an `init` method to actually set our self-reference
 #     fn init(&amp;mut self) {
 #         let self_ref: *const String = &amp;self.a;
 #         self.b = self_ref;
 #     }
-#     
+#
 #     fn a(&amp;self) -&gt; &amp;str {
 #         &amp;self.a
-#     } 
-#     
+#     }
+#
 #     fn b(&amp;self) -&gt; &amp;String {
 #         unsafe {&amp;*(self.b)}
 #     }
@@ -296,7 +296,7 @@ which <code>test1</code> is pointing to with the data stored at the memory locat
 #     a: String,
 #     b: *const String,
 # }
-# 
+#
 # impl Test {
 #     fn new(txt: &amp;str) -&gt; Self {
 #         let a = String::from(txt);
@@ -305,16 +305,16 @@ which <code>test1</code> is pointing to with the data stored at the memory locat
 #             b: std::ptr::null(),
 #         }
 #     }
-# 
+#
 #     fn init(&amp;mut self) {
 #         let self_ref: *const String = &amp;self.a;
 #         self.b = self_ref;
 #     }
-#     
+#
 #     fn a(&amp;self) -&gt; &amp;str {
 #         &amp;self.a
-#     } 
-#     
+#     }
+#
 #     fn b(&amp;self) -&gt; &amp;String {
 #         unsafe {&amp;*(self.b)}
 #     }
@@ -352,7 +352,7 @@ be tied to the lifetime of <code>test2</code> anymore.</p>
 #     a: String,
 #     b: *const String,
 # }
-# 
+#
 # impl Test {
 #     fn new(txt: &amp;str) -&gt; Self {
 #         let a = String::from(txt);
@@ -361,16 +361,16 @@ be tied to the lifetime of <code>test2</code> anymore.</p>
 #             b: std::ptr::null(),
 #         }
 #     }
-# 
+#
 #     fn init(&amp;mut self) {
 #         let self_ref: *const String = &amp;self.a;
 #         self.b = self_ref;
 #     }
-#     
+#
 #     fn a(&amp;self) -&gt; &amp;str {
 #         &amp;self.a
-#     } 
-#     
+#     }
+#
 #     fn b(&amp;self) -&gt; &amp;String {
 #         unsafe {&amp;*(self.b)}
 #     }
@@ -381,7 +381,7 @@ it's easy to create serious bugs using this code.</p>
 <p>I created a diagram to help visualize what's going on:</p>
 <p><strong>Fig 1: Before and after swap</strong>
 <img src="./assets/swap_problem.jpg" alt="swap_problem" /></p>
-<p>As you can see this results in unwanted behavior. It's easy to get this to 
+<p>As you can see this results in unwanted behavior. It's easy to get this to
 segfault, show UB and fail in other spectacular ways as well.</p>
 <h2><a class="header" href="#pinning-to-the-stack" id="pinning-to-the-stack">Pinning to the stack</a></h2>
 <p>Now, we can solve this problem by using <code>Pin</code> instead. Let's take a look at what
@@ -434,7 +434,7 @@ we'll show in a second.</p>
     // Notice how we shadow `test1` to prevent it from beeing accessed again
     let mut test1 = unsafe { Pin::new_unchecked(&amp;mut test1) };
     Test::init(test1.as_mut());
-     
+
     let mut test2 = Test::new(&quot;test2&quot;);
     let mut test2 = unsafe { Pin::new_unchecked(&amp;mut test2) };
     Test::init(test2.as_mut());
@@ -444,15 +444,15 @@ we'll show in a second.</p>
 }
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
-# 
+#
 # #[derive(Debug)]
 # struct Test {
 #     a: String,
 #     b: *const String,
 #     _marker: PhantomPinned,
 # }
-# 
-# 
+#
+#
 # impl Test {
 #     fn new(txt: &amp;str) -&gt; Self {
 #         let a = String::from(txt);
@@ -468,11 +468,11 @@ we'll show in a second.</p>
 #         let this = unsafe { self.get_unchecked_mut() };
 #         this.b = self_ptr;
 #     }
-# 
+#
 #     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
 #         &amp;self.get_ref().a
 #     }
-# 
+#
 #     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
 #         unsafe { &amp;*(self.b) }
 #     }
@@ -484,7 +484,7 @@ you'll get a compilation error.</p>
     let mut test1 = Test::new(&quot;test1&quot;);
     let mut test1 = unsafe { Pin::new_unchecked(&amp;mut test1) };
     Test::init(test1.as_mut());
-     
+
     let mut test2 = Test::new(&quot;test2&quot;);
     let mut test2 = unsafe { Pin::new_unchecked(&amp;mut test2) };
     Test::init(test2.as_mut());
@@ -495,15 +495,15 @@ you'll get a compilation error.</p>
 }
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
-# 
+#
 # #[derive(Debug)]
 # struct Test {
 #     a: String,
 #     b: *const String,
 #     _marker: PhantomPinned,
 # }
-# 
-# 
+#
+#
 # impl Test {
 #     fn new(txt: &amp;str) -&gt; Self {
 #         let a = String::from(txt);
@@ -519,11 +519,11 @@ you'll get a compilation error.</p>
 #         let this = unsafe { self.get_unchecked_mut() };
 #         this.b = self_ptr;
 #     }
-# 
+#
 #     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
 #         &amp;self.get_ref().a
 #     }
-# 
+#
 #     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
 #         unsafe { &amp;*(self.b) }
 #     }
@@ -536,7 +536,7 @@ us from swapping the pinned pointers.</p>
 stack frame we're in, so we can't create a self referential object in one
 stack frame and return it since any pointers we take to &quot;self&quot; is invalidated.</p>
 <p>It also puts a lot of responsibility in your hands if you pin a value to the
-stack. A mistake that is easy to make is, forgetting to shadow the original variable 
+stack. A mistake that is easy to make is, forgetting to shadow the original variable
 since you could drop the pinned pointer and access the old value
 after it's initialized like this:</p>
 <pre><pre class="playpen"><code class="language-rust">fn main() {
@@ -544,7 +544,7 @@ after it's initialized like this:</p>
    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) };
    Test::init(test1_pin.as_mut());
    drop(test1_pin);
-   
+
    let mut test2 = Test::new(&quot;test2&quot;);
    mem::swap(&amp;mut test1, &amp;mut test2);
    println!(&quot;Not self referential anymore: {:?}&quot;, test1.b);
@@ -552,15 +552,15 @@ after it's initialized like this:</p>
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
 # use std::mem;
-# 
+#
 # #[derive(Debug)]
 # struct Test {
 #     a: String,
 #     b: *const String,
 #     _marker: PhantomPinned,
 # }
-# 
-# 
+#
+#
 # impl Test {
 #     fn new(txt: &amp;str) -&gt; Self {
 #         let a = String::from(txt);
@@ -576,11 +576,11 @@ after it's initialized like this:</p>
 #         let this = unsafe { self.get_unchecked_mut() };
 #         this.b = self_ptr;
 #     }
-# 
+#
 #     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
 #         &amp;self.get_ref().a
 #     }
-# 
+#
 #     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
 #         unsafe { &amp;*(self.b) }
 #     }
@@ -659,7 +659,7 @@ certain operations on this value.</p>
 </li>
 <li>
 <p>Most standard library types implement <code>Unpin</code>. The same goes for most
-&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
+&quot;normal&quot; types you encounter in Rust. <code>Future</code>s and <code>Generator</code>s are two
 exceptions.</p>
 </li>
 <li>
@@ -688,8 +688,8 @@ by adding <code>std::marker::PhantomPinned</code> to your type on stable.</p>
 </li>
 </ol>
 <blockquote>
-<p>Unsafe code does not mean it's literally &quot;unsafe&quot;, it only relieves the 
-guarantees you normally get from the compiler. An <code>unsafe</code> implementation can 
+<p>Unsafe code does not mean it's literally &quot;unsafe&quot;, it only relieves the
+guarantees you normally get from the compiler. An <code>unsafe</code> implementation can
 be perfectly safe to do, but you have no safety net.</p>
 </blockquote>
 <h3><a class="header" href="#projectionstructural-pinning" id="projectionstructural-pinning">Projection/structural pinning</a></h3>
@@ -702,7 +702,7 @@ for that.</p>
 In the <code>Drop</code> implementation you take a mutable reference to <code>self</code>, which means
 extra care must be taken when implementing <code>Drop</code> for pinned types.</p>
 <h2><a class="header" href="#putting-it-all-together" id="putting-it-all-together">Putting it all together</a></h2>
-<p>This is exactly what we'll do when we implement our own <code>Futures</code> stay tuned, 
+<p>This is exactly what we'll do when we implement our own <code>Future</code>, so stay tuned,
 we're soon finished.</p>
 <h2><a class="header" href="#bonus-section-fixing-our-self-referential-generator-and-learning-more-about-pin" id="bonus-section-fixing-our-self-referential-generator-and-learning-more-about-pin">Bonus section: Fixing our self-referential generator and learning more about Pin</a></h2>
 <p>But now, let's prevent this problem using <code>Pin</code>. I've commented along the way to
@@ -726,7 +726,7 @@ pub fn main() {
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
 
-    // Uncomment these if you think it's safe to pin the values to the stack instead 
+    // Uncomment these if you think it's safe to pin the values to the stack instead
     // (it is in this case). Remember to comment out the two previous lines first.
     //let mut pinned1 = unsafe { Pin::new_unchecked(&amp;mut gen1) };
     //let mut pinned2 = unsafe { Pin::new_unchecked(&amp;mut gen2) };
@@ -734,7 +734,7 @@ pub fn main() {
     if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
         println!(&quot;Gen1 got value {}&quot;, n);
     }
-    
+
     if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
         println!(&quot;Gen2 got value {}&quot;, n);
     };
@@ -749,8 +749,8 @@ pub fn main() {
 }
 
 enum GeneratorState&lt;Y, R&gt; {
-    Yielded(Y),  
-    Complete(R), 
+    Yielded(Y),
+    Complete(R),
 }
 
 trait Generator {

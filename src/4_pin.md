@@ -30,7 +30,7 @@ Yep, you're right, that's double negation right there. `!Unpin` means
 
 On a more serious note, I feel obliged to mention that there are valid reasons
 for the names that were chosen. Naming is not easy, and I considered renaming
-`Unpin` and `!Unpin` in this book to make them easier to reason about. 
+`Unpin` and `!Unpin` in this book to make them easier to reason about.
 
 However, an experienced member of the Rust community convinced me that that there
 is just too many nuances and edge-cases to consider which is easily overlooked when
@@ -71,11 +71,11 @@ impl Test {
         let self_ref: *const String = &self.a;
         self.b = self_ref;
     }
-    
+
     fn a(&self) -> &str {
         &self.a
-    } 
-    
+    }
+
     fn b(&self) -> &String {
         unsafe {&*(self.b)}
     }
@@ -112,7 +112,7 @@ fn main() {
 #     a: String,
 #     b: *const String,
 # }
-# 
+#
 # impl Test {
 #     fn new(txt: &str) -> Self {
 #         let a = String::from(txt);
@@ -121,17 +121,17 @@ fn main() {
 #             b: std::ptr::null(),
 #         }
 #     }
-# 
+#
 #     // We need an `init` method to actually set our self-reference
 #     fn init(&mut self) {
 #         let self_ref: *const String = &self.a;
 #         self.b = self_ref;
 #     }
-#     
+#
 #     fn a(&self) -> &str {
 #         &self.a
-#     } 
-#     
+#     }
+#
 #     fn b(&self) -> &String {
 #         unsafe {&*(self.b)}
 #     }
@@ -168,7 +168,7 @@ fn main() {
 #     a: String,
 #     b: *const String,
 # }
-# 
+#
 # impl Test {
 #     fn new(txt: &str) -> Self {
 #         let a = String::from(txt);
@@ -177,16 +177,16 @@ fn main() {
 #             b: std::ptr::null(),
 #         }
 #     }
-# 
+#
 #     fn init(&mut self) {
 #         let self_ref: *const String = &self.a;
 #         self.b = self_ref;
 #     }
-#     
+#
 #     fn a(&self) -> &str {
 #         &self.a
-#     } 
-#     
+#     }
+#
 #     fn b(&self) -> &String {
 #         unsafe {&*(self.b)}
 #     }
@@ -234,7 +234,7 @@ fn main() {
 #     a: String,
 #     b: *const String,
 # }
-# 
+#
 # impl Test {
 #     fn new(txt: &str) -> Self {
 #         let a = String::from(txt);
@@ -243,16 +243,16 @@ fn main() {
 #             b: std::ptr::null(),
 #         }
 #     }
-# 
+#
 #     fn init(&mut self) {
 #         let self_ref: *const String = &self.a;
 #         self.b = self_ref;
 #     }
-#     
+#
 #     fn a(&self) -> &str {
 #         &self.a
-#     } 
-#     
+#     }
+#
 #     fn b(&self) -> &String {
 #         unsafe {&*(self.b)}
 #     }
@@ -267,7 +267,7 @@ I created a diagram to help visualize what's going on:
 **Fig 1: Before and after swap**
 ![swap_problem](./assets/swap_problem.jpg)
 
-As you can see this results in unwanted behavior. It's easy to get this to 
+As you can see this results in unwanted behavior. It's easy to get this to
 segfault, show UB and fail in other spectacular ways as well.
 
 ## Pinning to the stack
@@ -329,7 +329,7 @@ pub fn main() {
     // Notice how we shadow `test1` to prevent it from beeing accessed again
     let mut test1 = unsafe { Pin::new_unchecked(&mut test1) };
     Test::init(test1.as_mut());
-     
+
     let mut test2 = Test::new("test2");
     let mut test2 = unsafe { Pin::new_unchecked(&mut test2) };
     Test::init(test2.as_mut());
@@ -339,15 +339,15 @@ pub fn main() {
 }
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
-# 
+#
 # #[derive(Debug)]
 # struct Test {
 #     a: String,
 #     b: *const String,
 #     _marker: PhantomPinned,
 # }
-# 
-# 
+#
+#
 # impl Test {
 #     fn new(txt: &str) -> Self {
 #         let a = String::from(txt);
@@ -363,11 +363,11 @@ pub fn main() {
 #         let this = unsafe { self.get_unchecked_mut() };
 #         this.b = self_ptr;
 #     }
-# 
+#
 #     fn a<'a>(self: Pin<&'a Self>) -> &'a str {
 #         &self.get_ref().a
 #     }
-# 
+#
 #     fn b<'a>(self: Pin<&'a Self>) -> &'a String {
 #         unsafe { &*(self.b) }
 #     }
@@ -382,7 +382,7 @@ pub fn main() {
     let mut test1 = Test::new("test1");
     let mut test1 = unsafe { Pin::new_unchecked(&mut test1) };
     Test::init(test1.as_mut());
-     
+
     let mut test2 = Test::new("test2");
     let mut test2 = unsafe { Pin::new_unchecked(&mut test2) };
     Test::init(test2.as_mut());
@@ -393,15 +393,15 @@ pub fn main() {
 }
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
-# 
+#
 # #[derive(Debug)]
 # struct Test {
 #     a: String,
 #     b: *const String,
 #     _marker: PhantomPinned,
 # }
-# 
-# 
+#
+#
 # impl Test {
 #     fn new(txt: &str) -> Self {
 #         let a = String::from(txt);
@@ -417,11 +417,11 @@ pub fn main() {
 #         let this = unsafe { self.get_unchecked_mut() };
 #         this.b = self_ptr;
 #     }
-# 
+#
 #     fn a<'a>(self: Pin<&'a Self>) -> &'a str {
 #         &self.get_ref().a
 #     }
-# 
+#
 #     fn b<'a>(self: Pin<&'a Self>) -> &'a String {
 #         unsafe { &*(self.b) }
 #     }
@@ -434,9 +434,9 @@ us from swapping the pinned pointers.
 > It's important to note that stack pinning will always depend on the current
 > stack frame we're in, so we can't create a self referential object in one
 > stack frame and return it since any pointers we take to "self" is invalidated.
-> 
+>
 > It also puts a lot of responsibility in your hands if you pin a value to the
-> stack. A mistake that is easy to make is, forgetting to shadow the original variable 
+> stack. A mistake that is easy to make is, forgetting to shadow the original variable
 > since you could drop the pinned pointer and access the old value
 > after it's initialized like this:
 >
@@ -446,7 +446,7 @@ us from swapping the pinned pointers.
 >    let mut test1_pin = unsafe { Pin::new_unchecked(&mut test1) };
 >    Test::init(test1_pin.as_mut());
 >    drop(test1_pin);
->    
+>
 >    let mut test2 = Test::new("test2");
 >    mem::swap(&mut test1, &mut test2);
 >    println!("Not self referential anymore: {:?}", test1.b);
@@ -454,15 +454,15 @@ us from swapping the pinned pointers.
 > # use std::pin::Pin;
 > # use std::marker::PhantomPinned;
 > # use std::mem;
-> # 
+> #
 > # #[derive(Debug)]
 > # struct Test {
 > #     a: String,
 > #     b: *const String,
 > #     _marker: PhantomPinned,
 > # }
-> # 
-> # 
+> #
+> #
 > # impl Test {
 > #     fn new(txt: &str) -> Self {
 > #         let a = String::from(txt);
@@ -478,11 +478,11 @@ us from swapping the pinned pointers.
 > #         let this = unsafe { self.get_unchecked_mut() };
 > #         this.b = self_ptr;
 > #     }
-> # 
+> #
 > #     fn a<'a>(self: Pin<&'a Self>) -> &'a str {
 > #         &self.get_ref().a
 > #     }
-> # 
+> #
 > #     fn b<'a>(self: Pin<&'a Self>) -> &'a String {
 > #         unsafe { &*(self.b) }
 > #     }
@@ -564,7 +564,7 @@ code.
 certain operations on this value.
 
 1. Most standard library types implement `Unpin`. The same goes for most
-"normal" types you encounter in Rust. `Futures` and `Generators` are two
+"normal" types you encounter in Rust. `Future`s and `Generator`s are two
 exceptions.
 
 5. The main use case for `Pin` is to allow self referential types, the whole
@@ -585,8 +585,8 @@ by adding `std::marker::PhantomPinned` to your type on stable.
 
 10. Pinning a `!Unpin` pointer to the heap does not require `unsafe`. There is a shortcut for doing this using `Box::pin`.
 
-> Unsafe code does not mean it's literally "unsafe", it only relieves the 
-> guarantees you normally get from the compiler. An `unsafe` implementation can 
+> Unsafe code does not mean it's literally "unsafe", it only relieves the
+> guarantees you normally get from the compiler. An `unsafe` implementation can
 > be perfectly safe to do, but you have no safety net.
 
 
@@ -605,7 +605,7 @@ extra care must be taken when implementing `Drop` for pinned types.
 
 ## Putting it all together
 
-This is exactly what we'll do when we implement our own `Futures` stay tuned, 
+This is exactly what we'll do when we implement our own `Future`, so stay tuned,
 we're soon finished.
 
 [rfc2349]: https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md
@@ -637,7 +637,7 @@ pub fn main() {
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
 
-    // Uncomment these if you think it's safe to pin the values to the stack instead 
+    // Uncomment these if you think it's safe to pin the values to the stack instead
     // (it is in this case). Remember to comment out the two previous lines first.
     //let mut pinned1 = unsafe { Pin::new_unchecked(&mut gen1) };
     //let mut pinned2 = unsafe { Pin::new_unchecked(&mut gen2) };
@@ -645,7 +645,7 @@ pub fn main() {
     if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
         println!("Gen1 got value {}", n);
     }
-    
+
     if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
         println!("Gen2 got value {}", n);
     };
@@ -660,8 +660,8 @@ pub fn main() {
 }
 
 enum GeneratorState<Y, R> {
-    Yielded(Y),  
-    Complete(R), 
+    Yielded(Y),
+    Complete(R),
 }
 
 trait Generator {

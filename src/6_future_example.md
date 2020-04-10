@@ -1,6 +1,6 @@
 # Implementing Futures - main example
 
-We'll create our own `Futures` together with a fake reactor and a simple
+We'll create our own Futures together with a fake reactor and a simple
 executor which allows you to edit, run an play around with the code right here
 in your browser.
 
@@ -51,8 +51,8 @@ a `Future` has resolved and should be polled again.
 fn block_on<F: Future>(mut future: F) -> F::Output {
 
     // the first thing we do is to construct a `Waker` which we'll pass on to
-    // the `reactor` so it can wake us up when an event is ready. 
-    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    // the `reactor` so it can wake us up when an event is ready.
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() });
     let waker = waker_into_waker(Arc::into_raw(mywaker));
 
     // The context struct is just a wrapper for a `Waker` object. Maybe in the
@@ -70,7 +70,7 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
     // an event occurs, or a thread has a "spurious wakeup" (an unexpected wakeup
     // that can happen for no good reason).
     let val = loop {
-        
+
         match Future::poll(pinned, &mut cx) {
 
             // when the Future is ready we're finished
@@ -88,26 +88,26 @@ In all the examples you'll see in this chapter I've chosen to comment the code
 extensively. I find it easier to follow along that way so I'll not repeat myself
 here and focus only on some important aspects that might need further explanation.
 
-Now that you've read so much about `Generators` and `Pin` already this should
+Now that you've read so much about `Generator`s and `Pin` already this should
 be rather easy to understand. `Future` is a state machine, every `await` point
 is a `yield` point. We could borrow data across `await` points and we meet the
 exact same challenges as we do when borrowing across `yield` points.
 
 > `Context` is just a wrapper around the `Waker`. At the time of writing this
 book it's nothing more. In the future it might be possible that the `Context`
-object will do more than just wrapping a `Future` so having this extra 
+object will do more than just wrapping a `Future` so having this extra
 abstraction gives some flexibility.
 
 As explained in the [chapter about generators](./3_generators_pin.md), we use
-`Pin` and the guarantees that give us to allow `Futures` to have self
+`Pin` and the guarantees that give us to allow `Future`s to have self
 references.
 
 ## The `Future` implementation
 
 Futures has a well defined interface, which means they can be used across the
-entire ecosystem. 
+entire ecosystem.
 
-We can chain these `Futures` so that once a **leaf-future** is
+We can chain these `Future`s so that once a **leaf-future** is
 ready we'll perform a set of operations until either the task is finished or we
 reach yet another **leaf-future** which we'll wait for and yield control to the
 scheduler.
@@ -238,9 +238,9 @@ is just increasing the refcount in this case.
 
 Dropping a `Waker` is as easy as decreasing the refcount. Now, in special
 cases we could choose to not use an `Arc`. So this low-level method is there
-to allow such cases. 
+to allow such cases.
 
-Indeed, if we only used `Arc` there is no reason for us to go through all the 
+Indeed, if we only used `Arc` there is no reason for us to go through all the
 trouble of creating our own `vtable` and a `RawWaker`. We could just implement
 a normal trait.
 
@@ -253,13 +253,13 @@ The reactor will often be a global resource which let's us register interests
 without passing around a reference.
 
 > ### Why using thread park/unpark is a bad idea for a library
-> 
+>
 > It could deadlock easily since anyone could get a handle to the `executor thread`
 > and call park/unpark on it.
-> 
+>
 > 1. A future could call `unpark` on the executor thread from a different thread
 > 2. Our `executor` thinks that data is ready and wakes up and polls the future
-> 3. The future is not ready yet when polled, but at that exact same time the 
+> 3. The future is not ready yet when polled, but at that exact same time the
 > `Reactor` gets an event and calls `wake()` which also unparks our thread.
 > 4. This could happen before we go to sleep again since these processes
 > run in parallel.
@@ -285,13 +285,13 @@ Since concurrency mostly makes sense when interacting with the outside world (or
 at least some peripheral), we need something to actually abstract over this
 interaction in an asynchronous way.
 
-This is the `Reactors` job. Most often you'll see reactors in Rust use a library
+This is the Reactors job. Most often you'll see reactors in Rust use a library
 called [Mio][mio], which provides non blocking APIs and event notification for
 several platforms.
 
 The reactor will typically give you something like a `TcpStream` (or any other
 resource) which you'll use to create an I/O request. What you get in return is a
-`Future`. 
+`Future`.
 
 >If our reactor did some real I/O work our `Task` in would instead be represent
 >a non-blocking `TcpStream` which registers interest with the global `Reactor`.
@@ -463,7 +463,7 @@ which you can edit and change the way you like.
 #     task::{Context, Poll, RawWaker, RawWakerVTable, Waker}, mem,
 #     thread::{self, JoinHandle}, time::{Duration, Instant}, collections::HashMap
 # };
-# 
+#
 fn main() {
     // This is just to make it easier for us to see when our Future was resolved
     let start = Instant::now();
@@ -525,32 +525,32 @@ fn main() {
 #     };
 #     val
 # }
-# 
+#
 # // ====================== FUTURE IMPLEMENTATION ==============================
 # #[derive(Clone)]
 # struct MyWaker {
 #     thread: thread::Thread,
 # }
-# 
+#
 # #[derive(Clone)]
 # pub struct Task {
 #     id: usize,
 #     reactor: Arc<Mutex<Box<Reactor>>>,
 #     data: u64,
 # }
-# 
+#
 # fn mywaker_wake(s: &MyWaker) {
 #     let waker_ptr: *const MyWaker = s;
 #     let waker_arc = unsafe { Arc::from_raw(waker_ptr) };
 #     waker_arc.thread.unpark();
 # }
-# 
+#
 # fn mywaker_clone(s: &MyWaker) -> RawWaker {
 #     let arc = unsafe { Arc::from_raw(s) };
 #     std::mem::forget(arc.clone()); // increase ref count
 #     RawWaker::new(Arc::into_raw(arc) as *const (), &VTABLE)
 # }
-# 
+#
 # const VTABLE: RawWakerVTable = unsafe {
 #     RawWakerVTable::new(
 #         |s| mywaker_clone(&*(s as *const MyWaker)),   // clone
@@ -559,18 +559,18 @@ fn main() {
 #         |s| drop(Arc::from_raw(s as *const MyWaker)), // decrease refcount
 #     )
 # };
-# 
+#
 # fn waker_into_waker(s: *const MyWaker) -> Waker {
 #     let raw_waker = RawWaker::new(s as *const (), &VTABLE);
 #     unsafe { Waker::from_raw(raw_waker) }
 # }
-# 
+#
 # impl Task {
 #     fn new(reactor: Arc<Mutex<Box<Reactor>>>, data: u64, id: usize) -> Self {
 #         Task { id, reactor, data }
 #     }
 # }
-# 
+#
 # impl Future for Task {
 #     type Output = usize;
 #     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -587,7 +587,7 @@ fn main() {
 #         }
 #     }
 # }
-# 
+#
 # // =============================== REACTOR ===================================
 # enum TaskState {
 #     Ready,
@@ -605,7 +605,7 @@ fn main() {
 #     Close,
 #     Timeout(u64, usize),
 # }
-# 
+#
 # impl Reactor {
 #     fn new() -> Arc<Mutex<Box<Self>>> {
 #         let (tx, rx) = channel::<Event>();
@@ -656,7 +656,7 @@ fn main() {
 #         }
 #         self.dispatcher.send(Event::Timeout(duration, id)).unwrap();
 #     }
-# 
+#
 #     fn close(&mut self) {
 #         self.dispatcher.send(Event::Close).unwrap();
 #     }
@@ -668,7 +668,7 @@ fn main() {
 #         }).unwrap_or(false)
 #     }
 # }
-# 
+#
 # impl Drop for Reactor {
 #     fn drop(&mut self) {
 #         self.handle.take().map(|h| h.join().unwrap()).unwrap();
@@ -690,7 +690,7 @@ The `async` keyword can be used on functions as in `async fn(...)` or on a
 block as in `async { ... }`. Both will turn your function, or block, into a
 `Future`.
 
-These `Futures` are rather simple. Imagine our generator from a few chapters
+These Futures are rather simple. Imagine our generator from a few chapters
 back. Every `await` point is like a `yield` point.
 
 Instead of `yielding` a value we pass in, we yield the result of calling `poll` on
@@ -711,7 +711,7 @@ Future got 1 at time: 1.00.
 Future got 2 at time: 3.00.
 ```
 
-If these `Futures` were executed asynchronously we would expect to see:
+If these Futures were executed asynchronously we would expect to see:
 
 ```ignore
 Future got 1 at time: 1.00.
@@ -733,7 +733,7 @@ how they implement different ways of running Futures to completion.
 [If I were you I would read this next, and try to implement it for our example.](./conclusion.md#building-a-better-exectuor).
 
 That's actually it for now. There as probably much more to learn, this is enough
-for today. 
+for today.
 
 I hope exploring Futures and async in general gets easier after this read and I
 do really hope that you do continue to explore further.
