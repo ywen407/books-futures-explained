@@ -71,7 +71,7 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
     // that can happen for no good reason).
     let val = loop {
         
-        match Future::poll(pinned, &mut cx) {
+        match Future::poll(future, &mut cx) {
 
             // when the Future is ready we're finished
             Poll::Ready(val) => break val,
