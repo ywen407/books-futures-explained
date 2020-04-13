@@ -434,7 +434,7 @@ we'll show in a second.</p>
 <pre><pre class="playpen"><code class="language-rust">pub fn main() {
     // test1 is safe to move before we initialize it
     let mut test1 = Test::new(&quot;test1&quot;);
-    // Notice how we shadow `test1` to prevent it from beeing accessed again
+    // Notice how we shadow `test1` to prevent it from being accessed again
     let mut test1 = unsafe { Pin::new_unchecked(&amp;mut test1) };
     Test::init(test1.as_mut());
 

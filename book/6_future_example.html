@@ -305,7 +305,7 @@ const VTABLE: RawWakerVTable = unsafe {
     )
 };
 
-// Instead of implementing this on the `MyWaker` oject in `impl Mywaker...` we
+// Instead of implementing this on the `MyWaker` object in `impl Mywaker...` we
 // just use this pattern instead since it saves us some lines of code.
 fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
     let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
@@ -389,9 +389,9 @@ without passing around a reference.</p>
 <blockquote>
 <h3><a class="header" href="#why-using-thread-parkunpark-is-a-bad-idea-for-a-library" id="why-using-thread-parkunpark-is-a-bad-idea-for-a-library">Why using thread park/unpark is a bad idea for a library</a></h3>
 <p>It could deadlock easily since anyone could get a handle to the <code>executor thread</code>
-and call park/unpark on our thread or we could have a race condition where the
-future resolves and calls <code>wake</code> before we have time to go to sleep in our
-executor. We'll se how we can fix this at the end of this chapter.</p>
+and call park/unpark on our thread. I've made <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2018&amp;gist=b2343661fe3d271c91c6977ab8e681d0">an example with comments on the
+playground</a> that showcases how such an error could occur. You can also read a bit more about this in <a href="https://github.com/rust-lang/futures-rs/pull/2010">issue 2010</a>
+in the futures crate.</p>
 </blockquote>
 <h2><a class="header" href="#the-reactor" id="the-reactor">The Reactor</a></h2>
 <p>This is the home stretch, and not strictly <code>Future</code> related, but we need one
@@ -898,7 +898,13 @@ fn mywaker_wake(s: &amp;MyWaker) {
     waker_arc.parker.unpark();
 }
 </code></pre>
-<p>And that's really all there is to it. The next chapter shows our finished code with this
+<p>And that's really all there is to it. </p>
+<blockquote>
+<p>If you checked out the playground link that showcased how park/unpark could <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2018&amp;gist=b2343661fe3d271c91c6977ab8e681d0">cause subtle
+problems</a>
+you can <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2018&amp;gist=bebef0f8a8ce6a9d0d32442cc8381595">check out this example</a> which shows how our final version avoids this problem.</p>
+</blockquote>
+<p>The next chapter shows our finished code with this
 improvement which you can explore further if you wish.</p>
 
                     </main>

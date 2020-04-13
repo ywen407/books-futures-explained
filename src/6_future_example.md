@@ -264,9 +264,9 @@ without passing around a reference.
 > ### Why using thread park/unpark is a bad idea for a library
 >
 > It could deadlock easily since anyone could get a handle to the `executor thread`
-> and call park/unpark on our thread or we could have a race condition where the
-> future resolves and calls `wake` before we have time to go to sleep in our
-> executor. We'll se how we can fix this at the end of this chapter.
+> and call park/unpark on our thread. I've made [an example with comments on the
+> playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b2343661fe3d271c91c6977ab8e681d0) that showcases how such an error could occur. You can also read a bit more about this in [issue 2010](https://github.com/rust-lang/futures-rs/pull/2010)
+> in the futures crate.
 
 ## The Reactor
 
@@ -821,7 +821,13 @@ fn mywaker_wake(s: &MyWaker) {
 }
 ```
 
-And that's really all there is to it. The next chapter shows our finished code with this
+And that's really all there is to it. 
+
+> If you checked out the playground link that showcased how park/unpark could [cause subtle
+> problems](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b2343661fe3d271c91c6977ab8e681d0)
+> you can [check out this example](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=bebef0f8a8ce6a9d0d32442cc8381595) which shows how our final version avoids this problem.
+
+The next chapter shows our finished code with this
 improvement which you can explore further if you wish.
 
 [mio]: https://github.com/tokio-rs/mio
