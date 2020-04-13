@@ -173,7 +173,7 @@ const VTABLE: RawWakerVTable = unsafe {
     )
 };
 
-// Instead of implementing this on the `MyWaker` oject in `impl Mywaker...` we
+// Instead of implementing this on the `MyWaker` object in `impl Mywaker...` we
 // just use this pattern instead since it saves us some lines of code.
 fn waker_into_waker(s: *const MyWaker) -> Waker {
     let raw_waker = RawWaker::new(s as *const (), &VTABLE);

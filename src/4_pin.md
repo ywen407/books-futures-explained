@@ -326,7 +326,7 @@ Let's see what happens if we run our example now:
 pub fn main() {
     // test1 is safe to move before we initialize it
     let mut test1 = Test::new("test1");
-    // Notice how we shadow `test1` to prevent it from beeing accessed again
+    // Notice how we shadow `test1` to prevent it from being accessed again
     let mut test1 = unsafe { Pin::new_unchecked(&mut test1) };
     Test::init(test1.as_mut());
 
