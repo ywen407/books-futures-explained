@@ -44,6 +44,8 @@ The first thing an `executor` does when it gets a `Future` is polling it.
 Rust provides a way for the Reactor and Executor to communicate through the `Waker`. The reactor stores this `Waker` and calls `Waker::wake()` on it once
 a `Future` has resolved and should be polled again.
 
+> Notice that this chapter has a bonus section called [A  Proper Way to Park our Thread](./6_future_example.md#bonus-section---a-proper-way-to-park-our-thread) which shows how to avoid `thread::park`.
+
 **Our Executor will look like this:**
 
 ```rust, noplaypen, ignore
@@ -86,6 +88,14 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
 In all the examples you'll see in this chapter I've chosen to comment the code
 extensively. I find it easier to follow along that way so I'll not repeat myself
 here and focus only on some important aspects that might need further explanation.
+
+It's worth noting that simply calling `thread::sleep` as we do here can lead to
+both deadlocks and errors. We'll explain a bit more later and fix this if you
+read all the way to the [Bonus Section](./6_future_example.md##bonus-section---a-proper-way-to-park-our-thread) at
+the end of this chapter.
+
+For now, we keep it as simple and easy to understand as we can by just going
+to sleep.
 
 Now that you've read so much about `Generator`s and `Pin` already this should
 be rather easy to understand. `Future` is a state machine, every `await` point
@@ -254,26 +264,9 @@ without passing around a reference.
 > ### Why using thread park/unpark is a bad idea for a library
 >
 > It could deadlock easily since anyone could get a handle to the `executor thread`
-> and call park/unpark on it.
->
-> 1. A future could call `unpark` on the executor thread from a different thread
-> 2. Our `executor` thinks that data is ready and wakes up and polls the future
-> 3. The future is not ready yet when polled, but at that exact same time the
-> `Reactor` gets an event and calls `wake()` which also unparks our thread.
-> 4. This could happen before we go to sleep again since these processes
-> run in parallel.
-> 5. Our reactor has called `wake` but our thread is still sleeping since it was
-> awake already at that point.
-> 6. We're deadlocked and our program stops working
-
-> There is also the case that our thread could have what's called a
-> `spurious wakeup` ([which can happen unexpectedly][spurious_wakeup]), which
-> could cause the same deadlock if we're unlucky.
-
-There are several better solutions, here are some:
-
-  - [std::sync::CondVar][condvar]
-  - [crossbeam::sync::Parker][crossbeam_parker]
+> and call park/unpark on our thread or we could have a race condition where the
+> future resolves and calls `wake` before we have time to go to sleep in our
+> executor. We'll se how we can fix this at the end of this chapter.
 
 ## The Reactor
 
@@ -481,14 +474,12 @@ fn main() {
     // our code into a state machine, `yielding` at every `await` point.
     let fut1 = async {
         let val = future1.await;
-        let dur = (Instant::now() - start).as_secs_f32();
-        println!("Future got {} at time: {:.2}.", val, dur);
+        println!("Got {} at time: {:.2}.", val, start.elapsed().as_secs_f32());
     };
 
     let fut2 = async {
         let val = future2.await;
-        let dur = (Instant::now() - start).as_secs_f32();
-        println!("Future got {} at time: {:.2}.", val, dur);
+        println!("Got {} at time: {:.2}.", val, start.elapsed().as_secs_f32());
     };
 
     // Our executor can only run one and one future, this is pretty normal
@@ -740,6 +731,98 @@ I hope exploring Futures and async in general gets easier after this read and I
 do really hope that you do continue to explore further.
 
 Don't forget the exercises in the last chapter 😊.
+
+## Bonus Section - a Proper Way to Park our Thread
+
+As we explained earlier in our chapter, simply calling `thread::sleep` is not really
+sufficient to implement a proper reactor. You can also reach a tool like the `Parker`
+in crossbeam: [crossbeam::sync::Parker][crossbeam_parker]
+
+Since it doesn't require many lines of code to create a working solution ourselves we'll show how
+we can solve that by using a `Condvar` and a `Mutex` instead.
+
+Start by implementing our own `Parker` like this:
+
+```rust, ignore
+#[derive(Default)]
+struct Parker(Mutex<bool>, Condvar);
+
+impl Parker {
+    fn park(&self) {
+
+        // We aquire a lock to the Mutex which protects our flag indicating if we
+        // should resume execution or not.
+        let mut resumable = self.0.lock().unwrap();
+
+            // We put this in a loop since there is a chance we'll get woken, but
+            // our flag hasn't changed. If that happens, we simply go back to sleep.
+            while !*resumable {
+
+                // We sleep until someone notifies us
+                resumable = self.1.wait(resumable).unwrap();
+            }
+
+        // We immidiately set the condition to false, so that next time we call `park` we'll
+        // go right to sleep.
+        *resumable = false;
+    }
+
+    fn unpark(&self) {
+        // We simply acquire a lock to our flag and sets the condition to `runnable` when we
+        // get it.
+        *self.0.lock().unwrap() = true;
+
+        // We notify our `Condvar` so it wakes up and resumes.
+        self.1.notify_one();
+    }
+}
+```
+
+The `Condvar` in Rust is designed to work together with a Mutex. Usually, you'd think that we don't
+release the mutex-lock we acquire in `self.0.lock().unwrap();` before we go to sleep. Which means
+that our `unpark` function never will acquire a lock to our flag and we deadlock.
+
+Using `Condvar` we avoid this since the `Condvar` will consume our lock so it's released at the
+moment we go to sleep.
+
+When we resume again, our `Condvar` returns our lock so we can continue to operate on it.
+
+This means we need to make some very slight changes to our executor like this:
+
+```rust, ignore
+fn block_on<F: Future>(mut future: F) -> F::Output {
+    let parker = Arc::new(Parker::default()); // <--- NB!
+    let mywaker = Arc::new(MyWaker { parker: parker.clone() }); <--- NB!
+    let waker = mywaker_into_waker(Arc::into_raw(mywaker));
+    let mut cx = Context::from_waker(&waker);
+    
+    // SAFETY: we shadow `future` so it can't be accessed again.
+    let mut future = unsafe { Pin::new_unchecked(&mut future) }; 
+    loop {
+        match Future::poll(future.as_mut(), &mut cx) {
+            Poll::Ready(val) => break val,
+            Poll::Pending => parker.park(), // <--- NB!
+        };
+    }
+}
+```
+
+And we need to change our `Waker` like this:
+
+```rust, ignore
+#[derive(Clone)]
+struct MyWaker {
+    parker: Arc<Parker>,
+}
+
+fn mywaker_wake(s: &MyWaker) {
+    let waker_arc = unsafe { Arc::from_raw(s) };
+    waker_arc.parker.unpark();
+}
+```
+
+And that's really all there is to it. The next chapter shows our finished code with this
+improvement which you can explore further if you wish.
 
 [mio]: https://github.com/tokio-rs/mio
 [arc_wake]: https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html

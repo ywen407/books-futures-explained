@@ -17,16 +17,6 @@ So our implementation has taken some obvious shortcuts and could use some improv
 Actually digging into the code and try things yourself is a good way to learn. Here are
 some good exercises if you want to explore more:
 
-### Avoid `thread::park`
-
-The big problem using `Thread::park` and `Thread::unpark` is that the user can access these
-same methods from their own code. Try to use another method to suspend our thread and wake
-it up again on our command. Some hints:
-
-* Check out `CondVars`, here are two sources [Wikipedia][condvar_wiki] and the
-docs for [`CondVar`][condvar_std]
-* Take a look at crates that help you with this exact problem like [Crossbeam ](https://github.com/crossbeam-rs/crossbeam)\(specifically the [`Parker`](https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html)\)
-
 ### Avoid wrapping the whole `Reactor` in a mutex and pass it around
 
 First of all, protecting the whole `Reactor` and passing it around is overkill. We're only

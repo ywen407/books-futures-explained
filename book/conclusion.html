@@ -164,15 +164,6 @@ I'll try my best to respond to each one of them.</p>
 <p>So our implementation has taken some obvious shortcuts and could use some improvement. 
 Actually digging into the code and try things yourself is a good way to learn. Here are
 some good exercises if you want to explore more:</p>
-<h3><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h3>
-<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these
-same methods from their own code. Try to use another method to suspend our thread and wake
-it up again on our command. Some hints:</p>
-<ul>
-<li>Check out <code>CondVars</code>, here are two sources <a href="https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables">Wikipedia</a> and the
-docs for <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html"><code>CondVar</code></a></li>
-<li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
-</ul>
 <h3><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h3>
 <p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only
 interested in synchronizing some parts of the information it contains. Try to refactor that
