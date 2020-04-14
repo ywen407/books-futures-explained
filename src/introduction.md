@@ -64,6 +64,10 @@ A special thanks to [jonhoo](https://twitter.com/jonhoo) who was kind enough to
 give me some valuable feedback on a very early draft of this book. He has not
 read the finished product, but a big thanks is definitely due.
 
+## Translations
+
+[This book has been translated to Chinese](https://stevenbai.top/rust/futures_explained_in_200_lines_of_rust/) by [nkbai](https://github.com/nkbai).
+
 [mdbook]: https://github.com/rust-lang/mdBook
 [book_repo]: https://github.com/cfsamson/books-futures-explained
 [example_repo]: https://github.com/cfsamson/examples-futures

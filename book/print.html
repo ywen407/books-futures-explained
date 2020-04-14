@@ -206,6 +206,8 @@ async ecosystem and and rarely gets enough praise in my eyes.</p>
 <p>A special thanks to <a href="https://twitter.com/jonhoo">jonhoo</a> who was kind enough to
 give me some valuable feedback on a very early draft of this book. He has not
 read the finished product, but a big thanks is definitely due.</p>
+<h2><a class="header" href="#translations" id="translations">Translations</a></h2>
+<p><a href="https://stevenbai.top/rust/futures_explained_in_200_lines_of_rust/">This book has been translated to Chinese</a> by <a href="https://github.com/nkbai">nkbai</a>.</p>
 <h1><a class="header" href="#some-background-information" id="some-background-information">Some Background Information</a></h1>
 <p>Before we go into the details about Futures in Rust, let's take a quick look
 at the alternatives for handling concurrent programming in general and some
@@ -1681,9 +1683,8 @@ struct Test {
 
 impl Test {
     fn new(txt: &amp;str) -&gt; Self {
-        let a = String::from(txt);
         Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
         }
     }
@@ -1882,10 +1883,9 @@ impl Test {
     fn new(txt: &amp;str) -&gt; Self {
         let a = String::from(txt);
         Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
-            // This makes our type `!Unpin`
-            _marker: PhantomPinned,
+            _marker: PhantomPinned, // This makes our type `!Unpin`
         }
     }
     fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
@@ -1987,12 +1987,10 @@ you'll get a compilation error.</p>
 </span><span class="boring">
 </span><span class="boring">impl Test {
 </span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
 </span><span class="boring">        Test {
-</span><span class="boring">            a,
+</span><span class="boring">            a: let a = String::from(txt),
 </span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">            // This makes our type `!Unpin`
-</span><span class="boring">            _marker: PhantomPinned,
+</span><span class="boring">            _marker: PhantomPinned, // This makes our type `!Unpin`
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
@@ -2044,12 +2042,10 @@ after it's initialized like this:</p>
 </span><span class="boring">
 </span><span class="boring">impl Test {
 </span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
 </span><span class="boring">        Test {
-</span><span class="boring">            a,
+</span><span class="boring">            a: String::from(txt),
 </span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">            // This makes our type `!Unpin`
-</span><span class="boring">            _marker: PhantomPinned,
+</span><span class="boring">            _marker: PhantomPinned, // This makes our type `!Unpin`
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
@@ -2084,9 +2080,8 @@ struct Test {
 
 impl Test {
     fn new(txt: &amp;str) -&gt; Pin&lt;Box&lt;Self&gt;&gt; {
-        let a = String::from(txt);
         let t = Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
             _marker: PhantomPinned,
         };

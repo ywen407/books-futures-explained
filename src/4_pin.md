@@ -60,9 +60,8 @@ struct Test {
 
 impl Test {
     fn new(txt: &str) -> Self {
-        let a = String::from(txt);
         Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
         }
     }
@@ -291,10 +290,9 @@ impl Test {
     fn new(txt: &str) -> Self {
         let a = String::from(txt);
         Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
-            // This makes our type `!Unpin`
-            _marker: PhantomPinned,
+            _marker: PhantomPinned, // This makes our type `!Unpin`
         }
     }
     fn init<'a>(self: Pin<&'a mut Self>) {
@@ -404,12 +402,10 @@ pub fn main() {
 #
 # impl Test {
 #     fn new(txt: &str) -> Self {
-#         let a = String::from(txt);
 #         Test {
-#             a,
+#             a: let a = String::from(txt),
 #             b: std::ptr::null(),
-#             // This makes our type `!Unpin`
-#             _marker: PhantomPinned,
+#             _marker: PhantomPinned, // This makes our type `!Unpin`
 #         }
 #     }
 #     fn init<'a>(self: Pin<&'a mut Self>) {
@@ -465,12 +461,10 @@ us from swapping the pinned pointers.
 > #
 > # impl Test {
 > #     fn new(txt: &str) -> Self {
-> #         let a = String::from(txt);
 > #         Test {
-> #             a,
+> #             a: String::from(txt),
 > #             b: std::ptr::null(),
-> #             // This makes our type `!Unpin`
-> #             _marker: PhantomPinned,
+> #             _marker: PhantomPinned, // This makes our type `!Unpin`
 > #         }
 > #     }
 > #     fn init<'a>(self: Pin<&'a mut Self>) {
@@ -508,9 +502,8 @@ struct Test {
 
 impl Test {
     fn new(txt: &str) -> Pin<Box<Self>> {
-        let a = String::from(txt);
         let t = Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
             _marker: PhantomPinned,
         };

@@ -203,9 +203,8 @@ struct Test {
 
 impl Test {
     fn new(txt: &amp;str) -&gt; Self {
-        let a = String::from(txt);
         Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
         }
     }
@@ -404,10 +403,9 @@ impl Test {
     fn new(txt: &amp;str) -&gt; Self {
         let a = String::from(txt);
         Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
-            // This makes our type `!Unpin`
-            _marker: PhantomPinned,
+            _marker: PhantomPinned, // This makes our type `!Unpin`
         }
     }
     fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
@@ -509,12 +507,10 @@ you'll get a compilation error.</p>
 </span><span class="boring">
 </span><span class="boring">impl Test {
 </span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
 </span><span class="boring">        Test {
-</span><span class="boring">            a,
+</span><span class="boring">            a: let a = String::from(txt),
 </span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">            // This makes our type `!Unpin`
-</span><span class="boring">            _marker: PhantomPinned,
+</span><span class="boring">            _marker: PhantomPinned, // This makes our type `!Unpin`
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
@@ -566,12 +562,10 @@ after it's initialized like this:</p>
 </span><span class="boring">
 </span><span class="boring">impl Test {
 </span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
-</span><span class="boring">        let a = String::from(txt);
 </span><span class="boring">        Test {
-</span><span class="boring">            a,
+</span><span class="boring">            a: String::from(txt),
 </span><span class="boring">            b: std::ptr::null(),
-</span><span class="boring">            // This makes our type `!Unpin`
-</span><span class="boring">            _marker: PhantomPinned,
+</span><span class="boring">            _marker: PhantomPinned, // This makes our type `!Unpin`
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
@@ -606,9 +600,8 @@ struct Test {
 
 impl Test {
     fn new(txt: &amp;str) -&gt; Pin&lt;Box&lt;Self&gt;&gt; {
-        let a = String::from(txt);
         let t = Test {
-            a,
+            a: String::from(txt),
             b: std::ptr::null(),
             _marker: PhantomPinned,
         };
