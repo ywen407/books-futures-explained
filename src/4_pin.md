@@ -43,7 +43,7 @@ If you want to you can read a bit of the discussion from the
 ## Pinning and self-referential structs
 
 Let's start where we left off in the last chapter by making the problem we
-saw using a self-referential struct in our generator a lot simpler by making
+saw using a self-references in our generator a lot simpler by making
 some self-referential structs that are easier to reason about than our
 state machines:
 
@@ -145,9 +145,8 @@ a: test1, b: test1
 a: test2, b: test2
 ```
 
-Let's see what happens if we swap the data stored at the memory location
-which `test1` is pointing to with the data stored at the memory location
-`test2` is pointing to and vice a versa.
+Let's see what happens if we swap the data stored at the memory location `test1` with the
+data stored at the memory location `test2` and vice a versa.
 
 ```rust
 fn main() {
@@ -311,7 +310,7 @@ impl Test {
 }
 ```
 
-Now, what we've done here is pinning a stack address. That will always be
+Now, what we've done here is pinning an object to the stack. That will always be
 `unsafe` if our type implements `!Unpin`.
 
 We use the same tricks here, including requiring an `init`. If we want to fix that
@@ -431,10 +430,10 @@ us from swapping the pinned pointers.
 > stack frame we're in, so we can't create a self referential object in one
 > stack frame and return it since any pointers we take to "self" is invalidated.
 >
-> It also puts a lot of responsibility in your hands if you pin a value to the
+> It also puts a lot of responsibility in your hands if you pin an object to the
 > stack. A mistake that is easy to make is, forgetting to shadow the original variable
-> since you could drop the pinned pointer and access the old value
-> after it's initialized like this:
+> since you could drop the `Pin` and access the old value after it's initialized
+> like this:
 >
 > ```rust
 > fn main() {
@@ -489,7 +488,7 @@ For completeness let's remove some unsafe and the need for an `init` method
 at the cost of a heap allocation. Pinning to the heap is safe so the user
 doesn't need to implement any unsafe code:
 
-```rust
+```rust, edition2018
 use std::pin::Pin;
 use std::marker::PhantomPinned;
 
@@ -532,7 +531,7 @@ pub fn main() {
 }
 ```
 
-The fact that it's safe to pin a heap allocated value even if it is `!Unpin`
+The fact that it's safe to pin heap allocated data even if it is `!Unpin`
 makes sense. Once the data is allocated on the heap it will have a stable address.
 
 There is no need for us as users of the API to take special care and ensure
@@ -561,8 +560,7 @@ certain operations on this value.
 exceptions.
 
 5. The main use case for `Pin` is to allow self referential types, the whole
-justification for stabilizing them was to allow that. There are still corner
-cases in the API which are being explored.
+justification for stabilizing them was to allow that.
 
 6. The implementation behind objects that are `!Unpin` is most likely unsafe.
 Moving such a type after it has been pinned can cause the universe to crash. As of the time of writing
@@ -572,11 +570,11 @@ this book, creating and reading fields of a self referential struct still requir
 7. You can add a `!Unpin` bound on a type on nightly with a feature flag, or
 by adding `std::marker::PhantomPinned` to your type on stable.
 
-8. You can either pin a value to memory on the stack or on the heap.
+8. You can either pin an object to the stack or to the heap.
 
-9. Pinning a `!Unpin` pointer to the stack requires `unsafe`
+9. Pinning a `!Unpin` object to the stack requires `unsafe`
 
-10. Pinning a `!Unpin` pointer to the heap does not require `unsafe`. There is a shortcut for doing this using `Box::pin`.
+10. Pinning a `!Unpin` object to the heap does not require `unsafe`. There is a shortcut for doing this using `Box::pin`.
 
 > Unsafe code does not mean it's literally "unsafe", it only relieves the
 > guarantees you normally get from the compiler. An `unsafe` implementation can
@@ -617,11 +615,11 @@ use std::pin::Pin;
 pub fn main() {
     let gen1 = GeneratorA::start();
     let gen2 = GeneratorA::start();
-    // Before we pin the pointers, this is safe to do
+    // Before we pin the data, this is safe to do
     // std::mem::swap(&mut gen, &mut gen2);
 
     // constructing a `Pin::new()` on a type which does not implement `Unpin` is
-    // unsafe. A value pinned to heap can be constructed while staying in safe
+    // unsafe. An object pinned to heap can be constructed while staying in safe
     // Rust so we can use that to avoid unsafe. You can also use crates like
     // `pin_utils` to pin to the stack safely, just remember that they use
     // unsafe under the hood so it's like using an already-reviewed unsafe
@@ -678,9 +676,9 @@ impl GeneratorA {
     }
 }
 
-// This tells us that the underlying pointer is not safe to move after pinning.
+// This tells us that this object is not safe to move after pinning.
 // In this case, only we as implementors "feel" this, however, if someone is
-// relying on our Pinned pointer this will prevent them from moving it. You need
+// relying on our Pinned data this will prevent them from moving it. You need
 // to enable the feature flag `#![feature(optin_builtin_traits)]` and use the
 // nightly compiler to implement `!Unpin`. Normally, you would use
 // `std::marker::PhantomPinned` to indicate that the struct is `!Unpin`.

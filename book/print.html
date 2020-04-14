@@ -2068,7 +2068,7 @@ after it's initialized like this:</p>
 <p>For completeness let's remove some unsafe and the need for an <code>init</code> method
 at the cost of a heap allocation. Pinning to the heap is safe so the user
 doesn't need to implement any unsafe code:</p>
-<pre><pre class="playpen"><code class="language-rust">use std::pin::Pin;
+<pre><pre class="playpen"><code class="language-rust edition2018">use std::pin::Pin;
 use std::marker::PhantomPinned;
 
 #[derive(Debug)]
