@@ -15,7 +15,9 @@ it gets significantly easier to reason about.
 
 ## Definitions
 
-Pin is only relevant for pointers. A reference to an object is a pointer.
+Pin wraps a pointer. A reference to an object is a pointer. Pin gives some
+guarantees about the _pointee_ (the data it points to) which we'll explore further
+in this chapter.
 
 Pin consists of the `Pin` type and the `Unpin` marker. Pin's purpose in life is
 to govern the rules that need to apply for types which implement `!Unpin`.
