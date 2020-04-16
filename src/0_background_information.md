@@ -560,5 +560,5 @@ get into the right mindset for exploring Rust's Futures.
 
 <br />
 <div style="text-align: center;  padding-top: 2em;">
-<a href="/books-futures-explained/1_futures_in_rust.html" style="background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
+<a href="/books-futures-explained/1_futures_in_rust.html" style="display: inline-block; background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
 </div>
