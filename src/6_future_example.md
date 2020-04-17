@@ -255,7 +255,7 @@ a normal trait.
 
 Fortunately, in the future this will probably be possible in the standard
 library as well. For now, [this trait lives in the nursery][arc_wake], but my
-guess is that this will be a part of the standard library after som maturing.
+guess is that this will be a part of the standard library after some maturing.
 
 We choose to pass in a reference to the whole `Reactor` here. This isn't normal.
 The reactor will often be a global resource which let's us register interests
