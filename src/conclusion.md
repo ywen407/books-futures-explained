@@ -23,8 +23,9 @@ First of all, protecting the whole `Reactor` and passing it around is overkill. 
 interested in synchronizing some parts of the information it contains. Try to refactor that
 out and only synchronize access to what's really needed.
 
-I'd encourage you to have a look at how [the async_std driver is implemented](https://github.com/async-rs/async-std/blob/master/src/net/driver/mod.rs)
-and [how tokios scheduler is implemented](https://github.com/tokio-rs/tokio/blob/master/tokio/src/runtime/basic_scheduler.rs) to get some inspiration.
+I'd encourage you to have a look at how async_std solves this with a global [runtime](https://github.com/async-rs/async-std/blob/b446cd023084a157b8a531cff65b8df37750be58/src/rt/mod.rs#L15-L23) which includes the [reactor](https://github.com/async-rs/async-std/blob/b446cd023084a157b8a531cff65b8df37750be58/src/rt/runtime.rs#L39-L70)
+and [how tokio's rutime](https://github.com/tokio-rs/tokio/blob/19a87e090ed528001e0363a30f6165304a710d49/tokio/src/runtime/context.rs#L2-L12) solves the same
+thing in a slightly different way to get some inspiration.
 
 * Do you want to pass around a reference to this information using an `Arc`?
 * Do you want to make a global `Reactor` so it can be accessed from anywhere?
