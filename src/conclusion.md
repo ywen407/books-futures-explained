@@ -39,6 +39,28 @@ can run multiple futures concurrently.
 As I suggested in the start of this book, visiting [@stjepan'sblog series about implementing your own executors](https://stjepang.github.io/2020/01/31/build-your-own-executor.html)
 is the place I would start and take it from there.
 
+### Create an unique Id for each task
+
+As we discussed in the end of the main example. What happens if the user pass in
+the same Id for both events?
+
+```rust, ignore
+let future1 = Task::new(reactor.clone(), 1, 1);
+let future2 = Task::new(reactor.clone(), 2, 1);
+```
+
+Right now it will deadlock since our `poll` method thinks the first poll of
+`future2` is `future1` getting polled again and swaps out the waker with the
+one from `future2`. This waker never gets called since the task is never
+registered.
+
+It's probably a bad idea to expose the user to this behavior, so we
+should have a unique Id for each task which we use internally. There are a
+many ways to solve this. Below is two suggestions to get going:
+
+1. Let the reactor have a `usize` which is incremented on every task creation
+2. Use a crate like `Guid` to generate an unique Id for each task
+
 ## Further reading
 
 There are many great resources. In addition to the RFCs and articles I've already

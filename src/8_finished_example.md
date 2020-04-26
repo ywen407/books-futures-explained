@@ -25,7 +25,6 @@ fn main() {
     };
 
     block_on(mainfut);
-    reactor.lock().map(|mut r| r.close()).unwrap();
 }
 
 use std::{
@@ -72,7 +71,6 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
 struct MyWaker {
     parker: Arc<Parker>,
 }
-
 #[derive(Clone)]
 pub struct Task {
     id: usize,
@@ -193,10 +191,6 @@ impl Reactor {
         self.dispatcher.send(Event::Timeout(duration, id)).unwrap();
     }
 
-    fn close(&mut self) {
-        self.dispatcher.send(Event::Close).unwrap();
-    }
-
     fn is_ready(&self, id: usize) -> bool {
         self.tasks.get(&id).map(|state| match state {
             TaskState::Ready => true,
@@ -207,6 +201,7 @@ impl Reactor {
 
 impl Drop for Reactor {
     fn drop(&mut self) {
+        self.dispatcher.send(Event::Close).unwrap();
         self.handle.take().map(|h| h.join().unwrap()).unwrap();
     }
 }

@@ -4,6 +4,8 @@
 
 The rendered version is found at: [https://cfsamson.github.io/books-futures-explained/](https://cfsamson.github.io/books-futures-explained/)
 
+You can find the main example in the repository [examples-futures](https://github.com/cfsamson/examples-futures).
+
 This book aims to explain `Futures` in Rust using an example driven approach,
 exploring why they're designed the way they are, and how they work. We'll also
 take a look at some of the alternatives we have when dealing with concurrency

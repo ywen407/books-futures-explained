@@ -419,11 +419,6 @@ impl Reactor {
         self.dispatcher.send(Event::Timeout(duration, id)).unwrap();
     }
 
-    // We send a close event to the reactor so it closes down our reactor-thread
-    fn close(&mut self) {
-        self.dispatcher.send(Event::Close).unwrap();
-    }
-
     // We simply checks if a task with this id is in the state `TaskState::Ready`
     fn is_ready(&self, id: usize) -> bool {
         self.tasks.get(&id).map(|state| match state {
@@ -435,6 +430,9 @@ impl Reactor {
 
 impl Drop for Reactor {
     fn drop(&mut self) {
+        // We send a close event to the reactor so it closes down our reactor-thread.
+        // If we don't do that we'll en up waiting forever for new events.
+        self.dispatcher.send(Event::Close).unwrap();
         self.handle.take().map(|h| h.join().unwrap()).unwrap();
     }
 }
@@ -492,10 +490,6 @@ fn main() {
 
     // This executor will block the main thread until the futures is resolved
     block_on(mainfut);
-
-    // When we're done, we want to shut down our reactor thread so our program
-    // ends nicely.
-    reactor.lock().map(|mut r| r.close()).unwrap();
 }
 # // ============================= EXECUTOR ====================================
 # fn block_on<F: Future>(mut future: F) -> F::Output {
@@ -649,10 +643,6 @@ fn main() {
 #         }
 #         self.dispatcher.send(Event::Timeout(duration, id)).unwrap();
 #     }
-#
-#     fn close(&mut self) {
-#         self.dispatcher.send(Event::Close).unwrap();
-#     }
 # 
 #     fn is_ready(&self, id: usize) -> bool {
 #         self.tasks.get(&id).map(|state| match state {
@@ -664,6 +654,7 @@ fn main() {
 #
 # impl Drop for Reactor {
 #     fn drop(&mut self) {
+#         self.dispatcher.send(Event::Close).unwrap();
 #         self.handle.take().map(|h| h.join().unwrap()).unwrap();
 #     }
 # }
@@ -675,6 +666,18 @@ I added a some debug printouts so we can observe a couple of things:
 2. The program flow from start to finish
 
 The last point is relevant when we move on the the last paragraph.
+
+> There is one subtle thing to note about our example. What happens if we pass
+> in the same `id` for both events?
+> 
+> ```rust, ignore
+> let future1 = Task::new(reactor.clone(), 1, 1);
+> let future2 = Task::new(reactor.clone(), 2, 1);
+> ```
+> 
+> We'll discuss this a bit more under exercises in the last chapter where we
+> also look at ways to fix it. For now, just make a note of it so you're aware
+> of the problem.
 
 ## Async/Await and concurrecy
 
