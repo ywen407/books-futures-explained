@@ -72,7 +72,7 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
     // an event occurs, or a thread has a "spurious wakeup" (an unexpected wakeup
     // that can happen for no good reason).
     let val = loop { 
-        match Future::poll(future, &mut cx) {
+        match Future::poll(future.as_mut(), &mut cx) {
         
             // when the Future is ready we're finished
             Poll::Ready(val) => break val,
@@ -431,7 +431,7 @@ impl Reactor {
 impl Drop for Reactor {
     fn drop(&mut self) {
         // We send a close event to the reactor so it closes down our reactor-thread.
-        // If we don't do that we'll en up waiting forever for new events.
+        // If we don't do that we'll end up waiting forever for new events.
         self.dispatcher.send(Event::Close).unwrap();
         self.handle.take().map(|h| h.join().unwrap()).unwrap();
     }
