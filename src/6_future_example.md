@@ -303,8 +303,6 @@ for the sake of this example.
 **Our Reactor will look like this:**
 
 ```rust, noplaypen, ignore
-// This is a "fake" reactor. It does no real I/O, but that also makes our
-// code possible to run in the book and in the playground
 // The different states a task can have in this Reactor
 enum TaskState {
     Ready,
