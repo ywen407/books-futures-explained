@@ -456,7 +456,7 @@ fn main() {
     // This is just to make it easier for us to see when our Future was resolved
     let start = Instant::now();
 
-    // Many runtimes create a glocal `reactor` we pass it as an argument
+    // Many runtimes create a global `reactor` we pass it as an argument
     let reactor = Reactor::new();
     
     // We create two tasks:
