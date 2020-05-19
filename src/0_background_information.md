@@ -130,7 +130,7 @@ second as you read this.
 **Drawbacks:**
 
 1. The stacks might need to grow. Solving this is not easy and will have a cost.
-2. You need to save all the CPU state on every switch.
+2. You need to save the CPU state on every switch.
 3. It's not a _zero cost abstraction_ (Rust had green threads early on and this
    was one of the reasons they were removed).
 4. Complicated to implement correctly if you want to support many different
