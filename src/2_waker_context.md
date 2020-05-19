@@ -26,7 +26,7 @@ extend the ecosystem with new leaf-level tasks.
 
 ## The Context type
 
-As the docs state as of now this type only wrapps a `Waker`, but it gives some
+As the docs state as of now this type only wraps a `Waker`, but it gives some
 flexibility for future evolutions of the API in Rust. The context can for example hold
 task-local storage and provide space for debugging hooks in later iterations.
 
@@ -35,7 +35,7 @@ task-local storage and provide space for debugging hooks in later iterations.
 One of the most confusing things we encounter when implementing our own `Future`s
 is how we implement a `Waker` . Creating a `Waker` involves creating a `vtable`
 which allows us to use dynamic dispatch to call methods on a _type erased_ trait
-object we construct our selves.
+object we construct ourselves.
 
 >If you want to know more about dynamic dispatch in Rust I can recommend an
 article written by Adam Schwalm called [Exploring Dynamic Dispatch in Rust](https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/).
@@ -105,7 +105,7 @@ trait Test {
     fn mul(&self) -> i32;
 }
 
-// This will represent our home brewn fat pointer to a trait object
+// This will represent our home-brewed fat pointer to a trait object
 #[repr(C)]
 struct FatPointer<'a> {
     /// A reference is a pointer to an instantiated `Data` instance
