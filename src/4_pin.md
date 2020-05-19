@@ -9,7 +9,7 @@
 >
 > `Pin` was suggested in [RFC#2349][rfc2349]
 
-Let's jump strait to it. Pinning is one of those subjects which is hard to wrap
+Let's jump straight to it. Pinning is one of those subjects which is hard to wrap
 your head around in the start, but once you unlock a mental model for it
 it gets significantly easier to reason about.
 
@@ -35,7 +35,7 @@ for the names that were chosen. Naming is not easy, and I considered renaming
 `Unpin` and `!Unpin` in this book to make them easier to reason about.
 
 However, an experienced member of the Rust community convinced me that that there
-is just too many nuances and edge-cases to consider which is easily overlooked when
+is just too many nuances and edge-cases to consider which are easily overlooked when
 naively giving these markers different names, and I'm convinced that we'll
 just have to get used to them and use them as is.
 
@@ -430,7 +430,7 @@ us from swapping the pinned pointers.
 
 > It's important to note that stack pinning will always depend on the current
 > stack frame we're in, so we can't create a self referential object in one
-> stack frame and return it since any pointers we take to "self" is invalidated.
+> stack frame and return it since any pointers we take to "self" are invalidated.
 >
 > It also puts a lot of responsibility in your hands if you pin an object to the
 > stack. A mistake that is easy to make is, forgetting to shadow the original variable

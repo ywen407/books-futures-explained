@@ -486,7 +486,7 @@ fn main() {
         fut2.await;
     };
 
-    // This executor will block the main thread until the futures is resolved
+    // This executor will block the main thread until the futures are resolved
     block_on(mainfut);
 }
 # // ============================= EXECUTOR ====================================

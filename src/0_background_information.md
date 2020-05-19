@@ -29,7 +29,7 @@ The runtime we use to handle concurrency for us is the operating system itself.
 **Drawbacks:**
 
 - OS level threads come with a rather large stack. If you have many tasks
-  waiting simultaneously (like you would in a web-server under heavy load) you'll
+  waiting simultaneously (like you would in a web server under heavy load) you'll
   run out of memory pretty fast.
 - There are a lot of syscalls involved. This can be pretty costly when the number
   of tasks is high.
@@ -93,7 +93,7 @@ runtime.
 
 ## Green threads
 
-Green threads use the same mechanism as an OS does by creating a thread for
+Green threads use the same mechanism as an OS - creating a thread for
 each task, setting up a stack, saving the CPU's state, and jumping from one
 task(thread) to another by doing a "context switch".
 
@@ -130,7 +130,7 @@ second as you read this.
 **Drawbacks:**
 
 1. The stacks might need to grow. Solving this is not easy and will have a cost.
-2. You need to save all the CPU state on every switch.
+2. You need to save the CPU state on every switch.
 3. It's not a _zero cost abstraction_ (Rust had green threads early on and this
    was one of the reasons they were removed).
 4. Complicated to implement correctly if you want to support many different
@@ -483,7 +483,7 @@ as timers but could represent any kind of resource that we'll have to wait for.
 
 You might start to wonder by now, when are we going to talk about Futures?
 
-Well, we're getting there. You see Promises, Futures and other names for
+Well, we're getting there. You see Promises, Futures, and other names for
 deferred computations are often used interchangeably.
 
 There are formal differences between them, but we won't cover those

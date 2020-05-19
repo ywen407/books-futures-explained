@@ -18,7 +18,7 @@ future.
 Async in Rust uses a `Poll` based approach, in which an asynchronous task will
 have three phases.
 
-1. **The Poll phase.** A Future is polled which result in the task progressing until
+1. **The Poll phase.** A Future is polled which results in the task progressing until
 a point where it can no longer make progress. We often refer to the part of the
 runtime which polls a Future as an executor.
 2. **The Wait phase.** An event source, most often referred to as a reactor,
@@ -35,7 +35,7 @@ pretty different from one another.
 
 ### Leaf futures
 
-Runtimes create _leaf futures_ which represents a resource like a socket.
+Runtimes create _leaf futures_ which represent a resource like a socket.
 
 ```rust, ignore, noplaypen
 // stream is a **leaf-future**
@@ -54,7 +54,7 @@ completion alone as you'll understand by reading the next paragraph.
 
 ### Non-leaf-futures
 
-Non-leaf-futures is the kind of futures we as _users_ of a runtime write
+Non-leaf-futures are the kind of futures we as _users_ of a runtime write
 ourselves using the `async` keyword to create a **task** which can be run on the
 executor.
 
@@ -76,30 +76,30 @@ let non_leaf = async {
 The key to these tasks is that they're able to yield control to the runtime's
 scheduler and then resume execution again where it left off at a later point.
 
-In contrast to leaf futures, these kind of futures does not themselves represent
+In contrast to leaf futures, these kind of futures do not themselves represent
 an I/O resource. When we poll these futures we either run some code or we yield
 to the scheduler while waiting for some resource to signal us that it's ready so
 we can resume where we left off.
 
 ## Runtimes
 
-Languages like C#, JavaScript, Java, GO and many others comes with a runtime
+Languages like C#, JavaScript, Java, GO, and many others comes with a runtime
 for handling concurrency. So if you come from one of those languages this will
 seem a bit strange to you.
 
 Rust is different from these languages in the sense that Rust doesn't come with
-a runtime for handling concurrency, so you need to use a library which provide
+a runtime for handling concurrency, so you need to use a library which provides
 this for you.
 
 Quite a bit of complexity attributed to Futures is actually complexity rooted
-in runtimes. Creating an efficient runtime is hard.
+in runtimes; creating an efficient runtime is hard.
 
 Learning how to use one correctly requires quite a bit of effort as well, but
-you'll see that there are several similarities between these kind of runtimes so
+you'll see that there are several similarities between these kind of runtimes, so
 learning one makes learning the next much easier.
 
 The difference between Rust and other languages is that you have to make an
-active choice when it comes to picking a runtime. Most often, in other languages
+active choice when it comes to picking a runtime. Most often in other languages, 
 you'll just use the one provided for you.
 
 **An async runtime can be divided into two parts:**
@@ -125,10 +125,10 @@ The two most popular runtimes for Futures as of writing this is:
 future through the `Future` trait.
 2. An ergonomic way of creating tasks which can be suspended and resumed through
 the `async` and `await` keywords.
-3. A defined interface wake up a suspended task through the `Waker` type.
+3. A defined interface to wake up a suspended task through the `Waker` type.
 
 That's really what Rusts standard library does. As you see there is no definition
-of non-blocking I/O, how these tasks are created or how they're run.
+of non-blocking I/O, how these tasks are created, or how they're run.
 
 ## I/O vs CPU intensive tasks
 
@@ -185,19 +185,19 @@ to the thread-pool most runtimes provide.
 Most executors have a way to accomplish #1 using methods like `spawn_blocking`.
 
 These methods send the task to a thread-pool created by the runtime where you
-can either perform CPU-intensive tasks or "blocking" tasks which is not supported
+can either perform CPU-intensive tasks or "blocking" tasks which are not supported
 by the runtime.
 
 Now, armed with this knowledge you are already on a good way for understanding
-Futures, but we're not gonna stop yet, there is lots of details to cover.
+Futures, but we're not gonna stop yet, there are lots of details to cover.
 
-Take a break or a cup of coffe and get ready as we go for a deep dive in the next chapters.
+Take a break or a cup of coffee and get ready as we go for a deep dive in the next chapters.
 
 ## Bonus section
 
 If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to
-try to give a high level overview that will make it easier to learn Rusts
+try to give a high-level overview that will make it easier to learn Rusts
 Futures afterwards:
 
 * [Async Basics - The difference between concurrency and parallelism](https://cfsamson.github.io/book-exploring-async-basics/1_concurrent_vs_parallel.html)
