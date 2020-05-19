@@ -32,7 +32,7 @@ thing in a slightly different way to get some inspiration.
 
 ### Building a better exectuor
 
-Right now, we can only run one and one future. Most runtimes has a `spawn` 
+Right now, we can only run one and one future only. Most runtimes has a `spawn` 
 function which let's you start off a future and `await` it later so you
 can run multiple futures concurrently.
 
