@@ -93,7 +93,7 @@ runtime.
 
 ## Green threads
 
-Green threads use the same mechanism as an OS does by creating a thread for
+Green threads use the same mechanism as an OS - creating a thread for
 each task, setting up a stack, saving the CPU's state, and jumping from one
 task(thread) to another by doing a "context switch".
 
