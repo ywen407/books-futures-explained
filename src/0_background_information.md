@@ -483,7 +483,7 @@ as timers but could represent any kind of resource that we'll have to wait for.
 
 You might start to wonder by now, when are we going to talk about Futures?
 
-Well, we're getting there. You see Promises, Futures and other names for
+Well, we're getting there. You see Promises, Futures, and other names for
 deferred computations are often used interchangeably.
 
 There are formal differences between them, but we won't cover those
