@@ -56,7 +56,7 @@ let rows: Result<Vec<SomeStruct>, SomeLibraryError> = block_on(future);
 
 1. The error messages produced could be extremely long and arcane
 2. Not optimal memory usage
-3. Did not allow to borrow across combinator steps.
+3. Did not allow borrowing across combinator steps.
 
 Point #3, is actually a major drawback with `Futures 0.1`.
 
@@ -306,8 +306,8 @@ to make this work, we'll have to let the compiler know that _we_ control this co
 
 That means turning to unsafe.
 
-Let's try to write an implementation that will compiler using `unsafe`. As you'll
-see we end up in a _self referential struct_. A struct which holds references
+Let's try to write an implementation that will compile using `unsafe`. As you'll
+see we end up in a _self-referential struct_. A struct which holds references
 into itself.
 
 As you'll notice, this compiles just fine!
@@ -369,7 +369,7 @@ impl Generator for GeneratorA {
 }
 ```
 
-Remember that our example is the generator we crated which looked like this:
+Remember that our example is the generator we created which looked like this:
 
 ```rust,noplaypen,ignore
 let mut gen = move || {
@@ -585,7 +585,7 @@ let mut fut = async {
     };
 ```
 
-The difference is that Futures has different states than what a `Generator` would
+The difference is that Futures have different states than what a `Generator` would
 have.
 
 An async block will return a `Future` instead of a `Generator`, however, the way
