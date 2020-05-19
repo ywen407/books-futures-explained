@@ -29,7 +29,7 @@ The runtime we use to handle concurrency for us is the operating system itself.
 **Drawbacks:**
 
 - OS level threads come with a rather large stack. If you have many tasks
-  waiting simultaneously (like you would in a web-server under heavy load) you'll
+  waiting simultaneously (like you would in a web server under heavy load) you'll
   run out of memory pretty fast.
 - There are a lot of syscalls involved. This can be pretty costly when the number
   of tasks is high.
