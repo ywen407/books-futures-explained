@@ -148,7 +148,7 @@ A green threads example could look something like this:
 _**Press the expand icon in the top right corner to show the example code.**_
 
 ```rust, edition2018
-# #![feature(asm, naked_functions)]
+# #![feature(llvm_asm, naked_functions)]
 # use std::ptr;
 #
 # const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
@@ -314,7 +314,7 @@ _**Press the expand icon in the top right corner to show the example code.**_
 # #[naked]
 # #[inline(never)]
 # unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
-#     asm!("
+#     llvm_asm!("
 #         mov     %rsp, 0x00($0)
 #         mov     %r15, 0x08($0)
 #         mov     %r14, 0x10($0)
