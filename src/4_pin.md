@@ -404,7 +404,7 @@ pub fn main() {
 # impl Test {
 #     fn new(txt: &str) -> Self {
 #         Test {
-#             a: let a = String::from(txt),
+#             a: String::from(txt),
 #             b: std::ptr::null(),
 #             _marker: PhantomPinned, // This makes our type `!Unpin`
 #         }
