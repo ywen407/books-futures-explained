@@ -8,7 +8,7 @@ description = "This book aims to explain Futures in Rust using an example driven
 
 
 [output.html]
-git-repository-url = "https://github.com/cfsamson/books-futures-explained"
+git-repository-url = "https://github.com/ywen407/books-futures-explained"
 google-analytics = "UA-157536992-1"
 
 [output.html.playpen]
